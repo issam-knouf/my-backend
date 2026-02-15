@@ -60,34 +60,42 @@ app.post('/create-subscription', async (req, res) => {
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Charge 2 — €500
-    const payment2 = await stripe.paymentIntents.create({
-      amount: 50000,
-      currency: 'eur',
-      customer: customerId,
-      payment_method: paymentMethodId,
-      payment_method_types: ['klarna'],
-      confirm: true,
-      off_session: true,
-      transfer_data: { destination: ACCOUNT_B },
-    });
-    console.log('Payment 2 created:', payment2.id);
-    console.log('Payment 2 status:', payment2.status);
+    try {
+      const payment2 = await stripe.paymentIntents.create({
+        amount: 50000,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        payment_method_types: ['klarna'],
+        confirm: true,
+        off_session: true,
+        transfer_data: { destination: ACCOUNT_B },
+      });
+      console.log('Payment 2 created:', payment2.id);
+      console.log('Payment 2 status:', payment2.status);
+    } catch (err) {
+      console.log('Payment 2 failed:', err.message);
+    }
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Charge 3 — €500
-    const payment3 = await stripe.paymentIntents.create({
-      amount: 50000,
-      currency: 'eur',
-      customer: customerId,
-      payment_method: paymentMethodId,
-      payment_method_types: ['klarna'],
-      confirm: true,
-      off_session: true,
-      transfer_data: { destination: ACCOUNT_B },
-    });
-    console.log('Payment 3 created:', payment3.id);
-    console.log('Payment 3 status:', payment3.status);
+    try {
+      const payment3 = await stripe.paymentIntents.create({
+        amount: 50000,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        payment_method_types: ['klarna'],
+        confirm: true,
+        off_session: true,
+        transfer_data: { destination: ACCOUNT_B },
+      });
+      console.log('Payment 3 created:', payment3.id);
+      console.log('Payment 3 status:', payment3.status);
+    } catch (err) {
+      console.log('Payment 3 failed:', err.message);
+    }
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -105,8 +113,6 @@ app.post('/create-subscription', async (req, res) => {
     res.json({
       subscriptionId: subscription.id,
       payment1: payment1.id,
-      payment2: payment2.id,
-      payment3: payment3.id,
       paymentStatus: payment1.status,
     });
   } catch (error) {
