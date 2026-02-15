@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1PXAJeJVnQhWqTzT';
+const ACCOUNT_B = 'acct_1SmIs0RtKG9ZONPq';
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
@@ -52,7 +52,6 @@ app.post('/create-subscription', async (req, res) => {
       payment_method_types: ['klarna'],
       confirm: true,
       off_session: true,
-      on_behalf_of: ACCOUNT_B,
       transfer_data: { destination: ACCOUNT_B },
     });
     console.log('Payment 1 created:', payment1.id);
@@ -69,7 +68,6 @@ app.post('/create-subscription', async (req, res) => {
       payment_method_types: ['klarna'],
       confirm: true,
       off_session: true,
-      on_behalf_of: ACCOUNT_B,
       transfer_data: { destination: ACCOUNT_B },
     });
     console.log('Payment 2 created:', payment2.id);
@@ -86,7 +84,6 @@ app.post('/create-subscription', async (req, res) => {
       payment_method_types: ['klarna'],
       confirm: true,
       off_session: true,
-      on_behalf_of: ACCOUNT_B,
       transfer_data: { destination: ACCOUNT_B },
     });
     console.log('Payment 3 created:', payment3.id);
