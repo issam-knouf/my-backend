@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1SmIs0RtKG9ZONPq';
+const ACCOUNT_B = 'acct_1SmLNn4ZnerSAS1f';
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
@@ -43,9 +43,9 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €88.00
+    // Charge 1 — €1.02
     const payment1 = await stripe.paymentIntents.create({
-      amount: 8800,
+      amount: 102,
       currency: 'eur',
       customer: customerId,
       payment_method: paymentMethodId,
