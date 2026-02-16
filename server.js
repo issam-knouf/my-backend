@@ -28,8 +28,21 @@ async function sendTelegram(message) {
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
 
+app.post('/page-visit', async (req, res) => {
+  const { visitorId, ip, country, city } = req.body;
+  await sendTelegram(
+    `👁 <b>Neue Seitenbesucher!</b>\n\n` +
+    `🆔 Visitor ID: <code>${visitorId}</code>\n` +
+    `🌍 Land: ${country || 'Unbekannt'}\n` +
+    `🏙 Stadt: ${city || 'Unbekannt'}\n` +
+    `🔌 IP: ${ip || 'Unbekannt'}\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+  );
+  res.json({ ok: true });
+});
+
 app.post('/create-setup-intent', async (req, res) => {
-  const { email, fname, lname, address, zip, city, country, phone } = req.body;
+  const { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
   try {
     let customer;
     const existing = await stripe.customers.list({ email, limit: 1 });
@@ -44,9 +57,9 @@ app.post('/create-setup-intent', async (req, res) => {
       metadata: { customer_id: customer.id },
     });
 
-    // Send Telegram notification
     await sendTelegram(
-      `🛒 <b>Neuer Checkout!</b>\n\n` +
+      `🛒 <b>Checkout Details!</b>\n\n` +
+      `🆔 Visitor ID: <code>${visitorId}</code>\n` +
       `📧 Email: ${email}\n` +
       `👤 Name: ${fname} ${lname}\n` +
       `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
@@ -66,7 +79,7 @@ app.post('/create-setup-intent', async (req, res) => {
 });
 
 app.post('/create-subscription', async (req, res) => {
-  const { customerId, paymentMethodId } = req.body;
+  const { customerId, paymentMethodId, visitorId } = req.body;
   try {
     await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
     await stripe.customers.update(customerId, {
@@ -140,9 +153,9 @@ app.post('/create-subscription', async (req, res) => {
     console.log('Subscription created:', subscription.id);
     console.log('Subscription status:', subscription.status);
 
-    // Send Telegram payment success notification
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
+      `🆔 Visitor ID: <code>${visitorId}</code>\n` +
       `💳 Payment 1: €1.09 ✅\n` +
       `🆔 Subscription: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
