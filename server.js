@@ -112,10 +112,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €1.02
+    // Charge 1 — €499.00
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 102,
+        amount: 49900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
