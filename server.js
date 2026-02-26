@@ -79,7 +79,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `👤 Namn: ${fname} ${lname}\n` +
       `📍 Adress: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Belopp: €89.00\n` +
+      `💰 Belopp: 1499 SEK\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
 
