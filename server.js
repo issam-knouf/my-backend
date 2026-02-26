@@ -65,6 +65,7 @@ app.post('/create-setup-intent', async (req, res) => {
     } else {
       customer = await stripe.customers.create({ email });
     }
+
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
       payment_method_types: ['klarna'],
@@ -112,6 +113,10 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
+    // Get payment method type dynamically
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    const pmType = paymentMethod.type;
+
     // Charge 1 — €1.02
     try {
       const payment1 = await stripe.paymentIntents.create({
@@ -119,10 +124,9 @@ app.post('/create-subscription', async (req, res) => {
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
+        payment_method_types: [pmType],
         confirm: true,
         off_session: true,
-        on_behalf_of: ACCOUNT_B,
         transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 1 created:', payment1.id);
@@ -140,10 +144,9 @@ app.post('/create-subscription', async (req, res) => {
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
+        payment_method_types: [pmType],
         confirm: true,
         off_session: true,
-        on_behalf_of: ACCOUNT_B,
         transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 2 created:', payment2.id);
@@ -161,10 +164,9 @@ app.post('/create-subscription', async (req, res) => {
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
-        payment_method_types: ['klarna'],
+        payment_method_types: [pmType],
         confirm: true,
         off_session: true,
-        on_behalf_of: ACCOUNT_B,
         transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 3 created:', payment3.id);
@@ -189,6 +191,7 @@ app.post('/create-subscription', async (req, res) => {
     await sendTelegram(
       `✅ <b>Betalning lyckades!</b>\n\n` +
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
+      `💳 Betalningsmetod: ${pmType}\n` +
       `💳 Betalning 1: €1.02\n` +
       `💳 Betalning 2: €1.02\n` +
       `💳 Betalning 3: €1.03\n` +
