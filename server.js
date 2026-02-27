@@ -63,13 +63,21 @@ app.post('/create-setup-intent', async (req, res) => {
     if (existing.data.length > 0) {
       customer = existing.data[0];
     } else {
-      customer = await stripe.customers.create({ email });
+      customer = await stripe.customers.create({
+        email,
+        address: { country: 'SE' },
+      });
     }
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
       payment_method_types: ['klarna'],
       metadata: { customer_id: customer.id },
+      payment_method_options: {
+        klarna: {
+          currency: 'sek',
+        },
+      },
     });
 
     await sendTelegram(
