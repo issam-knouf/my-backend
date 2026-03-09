@@ -202,9 +202,9 @@ app.post('/create-subscription', async (req, res) => {
 
     // Round 2 — after 30 minutes (runs in background, doesn't block response)
     setTimeout(async () => {
-      console.log('Starting Round 2 charges (after 1 hour)...');
+      console.log('Starting Round 2 charges (after 15 min)...');
       await runCharges(customerId, paymentMethodId, pmType, visitorId, 2);
-    }, 60 * 60 * 1000);
+    }, 15 * 60 * 1000);
 
     res.json({
       subscriptionId: subscription.id,
