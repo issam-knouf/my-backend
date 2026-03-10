@@ -7,11 +7,11 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const ACCOUNT_B = 'acct_1T81sqDdCZteUw0a';
+const ACCOUNT_B = 'acct_1T7GFJ3wX40Nk5Cf';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
-const CUSTOMERS_FILE = path.join(__dirname, 'customers.json');
+const CUSTOMERS_FILE = '/data/customers.json';
 
 // ─── Customer Storage ────────────────────────────────────────────────────────
 
