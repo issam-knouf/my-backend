@@ -163,12 +163,12 @@ app.post('/create-subscription', async (req, res) => {
       console.log('Payment 1 failed:', err.message);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    await new Promise(resolve => setTimeout(resolve, 30000));
 
-    // Charge 2 — 4999 SEK
+    // Charge 2 — 599 SEK
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 499900,
+        amount: 59900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
