@@ -146,10 +146,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 9588 SEK
+    // Charge 1 — 4599 SEK
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 958800,
+        amount: 459900,
         currency: 'sek',
         customer: customerId,
         payment_method: paymentMethodId,
