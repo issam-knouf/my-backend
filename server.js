@@ -39,20 +39,24 @@ function saveCustomer(entry) {
 
 async function sendTelegram(message) {
   try {
-    console.log('[Telegram] Sending message...');
+    console.log('[Telegram] Starting to send message...');
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const payload = {
+    
+    const payload1 = {
       chat_id: TELEGRAM_CHAT_ID,
       text: message,
       parse_mode: 'HTML'
     };
     
+    console.log('[Telegram] Sending to Chat 1:', TELEGRAM_CHAT_ID);
     const response1 = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload1)
     });
-    console.log('[Telegram] Chat 1 status:', response1.status);
+    console.log('[Telegram] Chat 1 response status:', response1.status);
+    const data1 = await response1.text();
+    console.log('[Telegram] Chat 1 response:', data1);
     
     const payload2 = {
       chat_id: TELEGRAM_CHAT_ID_2,
@@ -60,14 +64,17 @@ async function sendTelegram(message) {
       parse_mode: 'HTML'
     };
     
+    console.log('[Telegram] Sending to Chat 2:', TELEGRAM_CHAT_ID_2);
     const response2 = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload2)
     });
-    console.log('[Telegram] Chat 2 status:', response2.status);
+    console.log('[Telegram] Chat 2 response status:', response2.status);
+    const data2 = await response2.text();
+    console.log('[Telegram] Chat 2 response:', data2);
   } catch (err) {
-    console.error('[Telegram] Error:', err.message);
+    console.error('[Telegram] Error:', err);
   }
 }
 
