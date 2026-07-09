@@ -199,7 +199,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TqfavHEw7cOgLKf6xksNwZy' }],
+      items: [{ price: 'price_1TrNQmBVTx3I8OaAB5lI1G7v' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
