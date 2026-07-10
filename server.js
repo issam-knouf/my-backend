@@ -180,7 +180,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 1 — $499.00 USD
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 299,
+        amount: 100,
         currency: 'usd',
         customer: customerId,
         payment_method: paymentMethodId,
