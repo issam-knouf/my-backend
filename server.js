@@ -94,7 +94,7 @@ app.post('/create-setup-intent', async (req, res) => {
     }
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna', 'card'],
+      payment_method_types: ['klarna', 'card', 'amazon_pay'],
       metadata: { customer_id: customer.id },
     });
 
@@ -155,7 +155,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 1 — €65.67
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 6567,
+        amount: 167,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -175,7 +175,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 2 — €199
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 19900,
+        amount: 100,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -195,7 +195,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 49900,
+        amount: 100,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
