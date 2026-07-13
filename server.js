@@ -94,7 +94,7 @@ app.post('/create-setup-intent', async (req, res) => {
     }
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna', 'card', 'amazon_pay'],
+      payment_method_types: ['klarna', 'card'],
       metadata: { customer_id: customer.id },
     });
 
