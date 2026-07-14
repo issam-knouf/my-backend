@@ -211,7 +211,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial (€179/month)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1T3wlpEB93pAUPXSQjVBpUgo' }],
+      items: [{ price: 'price_1Tt80U1CDDrXH9fC0AgjDn48' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
     });
