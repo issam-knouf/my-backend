@@ -167,7 +167,7 @@ app.post('/create-subscription', async (req, res) => {
     } catch (err) {
       console.log('Payment 1 failed:', err.message);
     }
-
+ 
 
     // Subscription with 30-day trial (€179/month)
     const subscription = await stripe.subscriptions.create({
