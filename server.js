@@ -151,10 +151,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
     
-    // Charge 1 — €65.67
+    // Charge 1 — €99.00
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 400,
+        amount: 9900,
         currency: 'eur',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -172,7 +172,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial (€179/month)
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1Tt80U1CDDrXH9fC0AgjDn48' }],
+      items: [{ price: 'price_1U0ld3DfECDL6SyHpWefFo25' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
     });
