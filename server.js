@@ -86,7 +86,7 @@ app.post('/create-setup-intent', async (req, res) => {
     } else {
       customer = await stripe.customers.create({
         email,
-        address: { country: 'SE' },
+        address: { country: 'DE' },
       });
     }
 
@@ -103,7 +103,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `👤 Namn: ${fname} ${lname}\n` +
       `📍 Adress: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Belopp: 1499 kr\n` +
+      `💰 Belopp: 9,94 EUR\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
 
@@ -179,7 +179,7 @@ app.post('/create-subscription', async (req, res) => {
       `✅ <b>Betalning lyckades!</b>\n\n` +
       `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
       `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 9,94 eur\n` +
+      `💳 Betalning 1: 9,94 EUR\n` +
       `🆔 Prenumeration: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
@@ -226,7 +226,7 @@ app.post('/charge-saved', async (req, res) => {
     await sendTelegram(
       `💰 <b>Manuell betalning!</b>\n\n` +
       `🆔 Kund: <code>${customerId}</code>\n` +
-      `💳 Belopp: ${(amount || 994) / 100} eur\n` +
+      `💳 Belopp: ${(amount || 994) / 100} EUR\n` +
       `📋 Status: ${payment.status}\n` +
       `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
     );
