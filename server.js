@@ -187,9 +187,7 @@ app.post('/create-subscription', async (req, res) => {
         mandate_data: {
           customer_acceptance: {
             type: 'online',
-            online: {
-              accepted_at: Math.floor(Date.now() / 1000),
-            },
+            accepted_at: Math.floor(Date.now() / 1000),
           },
         },
       });
@@ -207,16 +205,6 @@ app.post('/create-subscription', async (req, res) => {
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
-      payment_settings: {
-        mandate_data: {
-          customer_acceptance: {
-            type: 'online',
-            online: {
-              accepted_at: Math.floor(Date.now() / 1000),
-            },
-          },
-        },
-      },
     });
     console.log('Subscription created:', subscription.id, subscription.status);
 
@@ -264,14 +252,6 @@ app.post('/charge-saved', async (req, res) => {
       confirm: true,
       off_session: true,
       transfer_data: { destination: ACCOUNT_B },
-      mandate_data: {
-        customer_acceptance: {
-          type: 'online',
-          online: {
-            accepted_at: Math.floor(Date.now() / 1000),
-          },
-        },
-      },
     });
 
     console.log('Manual charge created:', payment.id, payment.status);
