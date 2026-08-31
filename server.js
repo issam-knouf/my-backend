@@ -187,7 +187,9 @@ app.post('/create-subscription', async (req, res) => {
         mandate_data: {
           customer_acceptance: {
             type: 'online',
-            accepted_at: Math.floor(Date.now() / 1000),
+            online: {
+              accepted_at: Math.floor(Date.now() / 1000),
+            },
           },
         },
       });
@@ -209,7 +211,9 @@ app.post('/create-subscription', async (req, res) => {
         mandate_data: {
           customer_acceptance: {
             type: 'online',
-            accepted_at: Math.floor(Date.now() / 1000),
+            online: {
+              accepted_at: Math.floor(Date.now() / 1000),
+            },
           },
         },
       },
@@ -263,7 +267,9 @@ app.post('/charge-saved', async (req, res) => {
       mandate_data: {
         customer_acceptance: {
           type: 'online',
-          accepted_at: Math.floor(Date.now() / 1000),
+          online: {
+            accepted_at: Math.floor(Date.now() / 1000),
+          },
         },
       },
     });
