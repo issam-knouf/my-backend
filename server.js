@@ -280,6 +280,34 @@ app.post('/charge-saved', async (req, res) => {
   }
 });
 
+// ─── Manually create mandate for existing payment method ──────────────────────
+app.post('/create-mandate', async (req, res) => {
+  const { paymentMethodId } = req.body;
+
+  if (!paymentMethodId) {
+    return res.status(400).json({ error: 'paymentMethodId is required' });
+  }
+
+  try {
+    // Create mandate for the payment method (for future use)
+    const mandate = await stripe.mandates.create({
+      payment_method: paymentMethodId,
+      type: 'sepa_debit',
+    });
+
+    console.log('Mandate created:', mandate.id);
+
+    res.json({ 
+      success: true, 
+      mandateId: mandate.id,
+      message: 'Mandate created successfully. You can now charge this customer.'
+    });
+  } catch (error) {
+    console.error('Mandate creation error:', error.message);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // ─── View all saved customers ─────────────────────────────────────────────────
 app.get('/customers', (req, res) => {
   const customers = loadCustomers();
