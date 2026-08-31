@@ -173,7 +173,7 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 2,94 CHF
+    // Charge 1 — 0.99 CHF
     try {
       const payment1 = await stripe.paymentIntents.create({
         amount: 99,
@@ -227,8 +227,6 @@ app.post('/create-subscription', async (req, res) => {
 });
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
-// POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 99, "currency": "chf" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
@@ -276,7 +274,8 @@ app.post('/charge-saved', async (req, res) => {
   }
 });
 
-
+// ─── View all saved customers ─────────────────────────────────────────────────
+app.get('/customers', (req, res) => {
   const customers = loadCustomers();
   res.json({ total: customers.length, customers });
 });
