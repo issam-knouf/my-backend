@@ -104,7 +104,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
       `📦 Produkt: ENGWE L20\n` +
-      `💰 Beløb: 9.94 EUR\n` +
+      `💰 Beløb: 1.299 DKK\n` +
       `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
     );
 
@@ -147,11 +147,11 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 9.94 EUR (994 cents)
+    // Charge 1 — 1.299 DKK (129900 cents)
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 994,
-        currency: 'eur',
+        amount: 129900,
+        currency: 'dkk',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -169,7 +169,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TgtohD9m5cj7UNqiKNCDw94' }], // EUR 9.94 per month
+      items: [{ price: 'price_1UJOFuBkfefkBB9SiAVLpcE2' }], // DKK 1,299.00 per month
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -181,7 +181,7 @@ app.post('/create-subscription', async (req, res) => {
       `🆔 Besøger-ID: <code>${visitorId}</code>\n` +
       `📦 Produkt: ENGWE L20\n` +
       `💳 Betalingsmetode: ${pmType}\n` +
-      `💳 Beløb: 9.94 EUR\n` +
+      `💳 Beløb: 1.299 DKK\n` +
       `🆔 Ordrenummer: ${subscription.id}\n` +
       `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
     );
@@ -213,8 +213,8 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 994,
-      currency: currency || 'eur',
+      amount: amount || 129900,
+      currency: currency || 'dkk',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
@@ -229,7 +229,7 @@ app.post('/charge-saved', async (req, res) => {
       `💰 <b>Manuel betaling!</b>\n\n` +
       `🆔 Kunde: <code>${customerId}</code>\n` +
       `📦 Produkt: ENGWE L20\n` +
-      `💳 Beløb: ${(amount || 994) / 100} EUR\n` +
+      `💳 Beløb: ${(amount || 129900) / 100} DKK\n` +
       `📋 Status: ${payment.status}\n` +
       `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
     );
@@ -248,8 +248,8 @@ app.get('/health', (req, res) => {
     status: 'ok',
     destination: ACCOUNT_B,
     product: 'ENGWE L20',
-    amount: '9.94 EUR',
-    currency: 'eur',
+    amount: '1.299 DKK',
+    currency: 'dkk',
     savedCustomers: customers.length,
   });
 });
