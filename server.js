@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 
 const app = express();
-const ACCOUNT_B = 'acct_1Tc7YyBY9xQDWIiH';
+const ACCOUNT_B = 'acct_1R55t6JC1C8AvpQ6';
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
