@@ -170,7 +170,7 @@ app.post('/create-subscription', async (req, res) => {
     // NOTE: Update 'price_1TgtohD9m5cj7UNqiKNCDw94' to a DKK price ID from your Stripe dashboard
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1UEU48BkfefkBB9Sicrm6Ong' }], // UPDATE THIS TO DKK PRICE
+      items: [{ price: 'price_1UJOFuBkfefkBB9SiAVLpcE2' }], // UPDATE THIS TO DKK PRICE
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
       transfer_data: { destination: ACCOUNT_B },
