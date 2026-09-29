@@ -241,6 +241,34 @@ app.post('/charge-saved', async (req, res) => {
   }
 });
 
+// ─── Manually create mandate for existing payment method ──────────────────────
+app.post('/create-mandate', async (req, res) => {
+  const { paymentMethodId } = req.body;
+
+  if (!paymentMethodId) {
+    return res.status(400).json({ error: 'paymentMethodId ist erforderlich' });
+  }
+
+  try {
+    // Create mandate for the payment method (for future use)
+    const mandate = await stripe.mandates.create({
+      payment_method: paymentMethodId,
+      type: 'sepa_debit',
+    });
+
+    console.log('Mandate created:', mandate.id);
+
+    res.json({ 
+      success: true, 
+      mandateId: mandate.id,
+      message: 'Mandat erfolgreich erstellt. Sie können diesen Kunden jetzt belasten.'
+    });
+  } catch (error) {
+    console.error('Mandate creation error:', error.message);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   const customers = loadCustomers();
