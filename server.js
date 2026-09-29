@@ -92,7 +92,7 @@ app.post('/create-setup-intent', async (req, res) => {
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['twint'],
+      payment_method_types: ['card'],
       metadata: { customer_id: customer.id },
     });
 
@@ -105,7 +105,7 @@ app.post('/create-setup-intent', async (req, res) => {
       `📞 Telefon: ${phone || 'N/A'}\n` +
       `📦 Produkt: ENGWE L20\n` +
       `💰 Betrag: 89 CHF\n` +
-      `💳 Zahlungsart: TWINT (Jetzt kaufen, später bezahlen)\n` +
+      `💳 Zahlungsart: Card\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
@@ -123,7 +123,7 @@ app.post('/payment-initiated', async (req, res) => {
     `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
     `📧 E-Mail: ${email}\n` +
     `⏳ Kunde hat auf "Jetzt kaufen" geklickt\n` +
-    `💰 Zahlungsart: TWINT (Jetzt kaufen, später bezahlen)\n` +
+    `💰 Zahlungsart: Card\n` +
     `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
   res.json({ ok: true });
@@ -182,7 +182,7 @@ app.post('/create-subscription', async (req, res) => {
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
       `📦 Produkt: ENGWE L20\n` +
-      `💳 Zahlungsart: ${pmType} (TWINT - Jetzt kaufen, später bezahlen)\n` +
+      `💳 Zahlungsart: ${pmType}\n` +
       `💳 Betrag: 89 CHF\n` +
       `🆔 Bestellnummer: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
@@ -278,7 +278,7 @@ app.get('/health', (req, res) => {
     product: 'ENGWE L20',
     amount: '89 CHF',
     currency: 'chf',
-    paymentMethod: 'twint',
+    paymentMethod: 'card',
     priceId: 'price_1UEU48BkfefkBB9Sicrm6Ong',
     market: 'Switzerland',
     savedCustomers: customers.length,
