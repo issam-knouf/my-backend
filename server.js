@@ -73,6 +73,55 @@ app.post('/page-visit', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── CREATE PAYMENT INTENT (for React checkout) ────────────────────────────────
+app.post('/create-payment-intent', async (req, res) => {
+  let { email, name, phone, visitorId, lang } = req.body;
+  email = email.trim().replace(/\.$/, '');
+
+  try {
+    let customer;
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    if (existing.data.length > 0) {
+      customer = existing.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email,
+        name,
+        phone,
+        address: { country: 'CH' },
+      });
+    }
+
+    // One single payment: CHF 9.99 = 999 cents
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: 999,
+      currency: 'chf',
+      payment_method_types: ['twint'],
+      customer: customer.id,
+      receipt_email: email,
+      description: 'IPTV Subscription - 12 months',
+      metadata: { product: 'iptv-12-months', name, email, phone, lang, visitorId },
+    });
+
+    await sendTelegram(
+      `🛒 <b>Kassaangaben!</b>\n\n` +
+      `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
+      `📧 E-Mail: ${email}\n` +
+      `👤 Name: ${name}\n` +
+      `📞 Telefon: ${phone || 'N/A'}\n` +
+      `📦 Produkt: IPTV Subscription - 12 months\n` +
+      `💰 Betrag: 9.99 CHF\n` +
+      `💳 Zahlungsart: TWINT\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+    );
+
+    res.json({ clientSecret: paymentIntent.client_secret, customerId: customer.id });
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.post('/create-setup-intent', async (req, res) => {
   let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
   email = email.trim().replace(/\.$/, '');
@@ -122,7 +171,7 @@ app.post('/payment-initiated', async (req, res) => {
     `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
     `📧 E-Mail: ${email}\n` +
     `⏳ Kunde hat auf "Jetzt kaufen" geklickt\n` +
-    `💰 Zahlungsart: Card\n` +
+    `💰 Zahlungsart: TWINT\n` +
     `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
   res.json({ ok: true });
@@ -273,7 +322,7 @@ app.get('/health', (req, res) => {
     product: 'IPTV Subscription - 12 months',
     amount: '9.99 CHF',
     currency: 'chf',
-    paymentMethod: 'card',
+    paymentMethod: 'twint',
     priceId: 'price_1UEU48BkfefkBB9Sicrm6Ong',
     market: 'Switzerland',
     savedCustomers: customers.length,
