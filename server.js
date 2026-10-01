@@ -148,10 +148,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 499 CHF (8900 cents)
+    // Charge 1 — 9 CHF (8900 cents)
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 49900,
+        amount: 900,
         currency: 'chf',
         customer: customerId,
         payment_method: paymentMethodId,
