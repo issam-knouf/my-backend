@@ -148,10 +148,10 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 89 CHF (8900 cents)
+    // Charge 1 — 499 CHF (8900 cents)
     try {
       const payment1 = await stripe.paymentIntents.create({
-        amount: 8900,
+        amount: 49900,
         currency: 'chf',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -169,7 +169,7 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1UEU48BkfefkBB9Sicrm6Ong' }],
+      items: [{ price: 'price_1ULdihJC1C8AvpQ6ClpvVOoK' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
     });
