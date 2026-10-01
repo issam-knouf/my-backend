@@ -170,7 +170,6 @@ app.post('/create-payment-intent', async (req, res) => {
       receipt_email: email,
       description: 'IPTV Subscription - 12 months',
       metadata: { product: 'iptv-12-months', name, email, phone, lang, visitorId },
-      transfer_data: { destination: ACCOUNT_B },
     });
 
     await sendTelegram(
