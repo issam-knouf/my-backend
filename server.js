@@ -140,7 +140,7 @@ app.post('/create-setup-intent', async (req, res) => {
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customer.id,
-      payment_method_types: ['card'],
+      payment_method_types: ['twint'],
       metadata: { customer_id: customer.id },
     });
 
