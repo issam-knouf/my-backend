@@ -15,6 +15,7 @@ const CUSTOMERS_FILE = '/data/customers.json';
 // Meta Conversions API
 const PIXEL_ID = '1139354490574210';
 const CAPI_ACCESS_TOKEN = process.env.CAPI_ACCESS_TOKEN;
+const TEST_EVENT_CODE = 'TEST78138'; // Optional: for testing without affecting live data
 
 // ─── Customer Storage ─────────────────────────────────────────────────────────
 
@@ -110,7 +111,7 @@ async function sendCAPIEvent(eventName, eventData) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           data: [capiEvent],
-          test_event_code: process.env.CAPI_TEST_EVENT_CODE, // Optional: for testing
+          test_event_code: TEST_EVENT_CODE, // Test event code - remove or comment out for live
         }),
       }
     );
@@ -134,9 +135,9 @@ app.use(bodyParser.json());
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 app.post('/view-content', async (req, res) => {
-  const { visitorId, page } = req.body;
+  const { visitorId, page, ip: clientIp, country, city } = req.body;
   const userAgent = req.headers['user-agent'] || '';
-  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
+  const ip = clientIp || req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
 
   // Send ViewContent to CAPI (landing page product view)
   await sendCAPIEvent('ViewContent', {
@@ -148,17 +149,19 @@ app.post('/view-content', async (req, res) => {
     userAgent: userAgent,
   });
 
-  // Send Telegram notification
+  // Send Telegram notification with IP & Country
   await sendTelegram(
     `👁 <b>Neuer Landingpage Besucher!</b>\n\n` +
     `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
-    `📄 Seite: ${page === 'landing' ? 'Landing Page (Produkt)' : page}\n` +
+    `🌍 Land: ${country || 'Unbekannt'}\n` +
+    `🏙 Stadt: ${city || 'Unbekannt'}\n` +
+    `🔌 IP: ${ip.split(',')[0] || 'Unbekannt'}\n` +
     `📦 Produkt: AirBack MAX\n` +
     `💰 Preis: 19.99 CHF\n` +
     `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
 
-  console.log(`📄 ViewContent: ${page || 'landing'} (${visitorId})`);
+  console.log(`📄 ViewContent: ${page || 'landing'} (${visitorId}) - ${country || 'N/A'}`);
   res.json({ ok: true });
 });
 
