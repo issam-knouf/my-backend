@@ -15,7 +15,7 @@ const CUSTOMERS_FILE = '/data/customers.json';
 // Meta Conversions API
 const PIXEL_ID = '1139354490574210';
 const CAPI_ACCESS_TOKEN = process.env.CAPI_ACCESS_TOKEN;
-const TEST_EVENT_CODE = 'TEST78138'; // Optional: for testing without affecting live data
+const TEST_EVENT_CODE = ''; // Optional: for testing without affecting live data
 
 // ─── Customer Storage ─────────────────────────────────────────────────────────
 
