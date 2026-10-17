@@ -135,6 +135,8 @@ app.use(bodyParser.json());
 
 app.post('/view-content', async (req, res) => {
   const { visitorId, page } = req.body;
+  const userAgent = req.headers['user-agent'] || '';
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
 
   // Send ViewContent to CAPI (landing page product view)
   await sendCAPIEvent('ViewContent', {
@@ -142,6 +144,8 @@ app.post('/view-content', async (req, res) => {
     value: 19.99,
     content_name: 'AirBack MAX',
     content_id: 'airback-max',
+    ip: ip.split(',')[0],
+    userAgent: userAgent,
   });
 
   // Send Telegram notification
@@ -160,6 +164,8 @@ app.post('/view-content', async (req, res) => {
 
 app.post('/page-visit', async (req, res) => {
   const { visitorId, ip, country, city } = req.body;
+  const userAgent = req.headers['user-agent'] || '';
+  const clientIp = ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
 
   // Send InitiateCheckout to CAPI
   await sendCAPIEvent('InitiateCheckout', {
@@ -167,6 +173,10 @@ app.post('/page-visit', async (req, res) => {
     value: 19.99,
     content_name: 'AirBack MAX',
     content_id: 'airback-max',
+    ip: clientIp.split(',')[0],
+    userAgent: userAgent,
+    country: country,
+    city: city,
   });
 
   await sendTelegram(
