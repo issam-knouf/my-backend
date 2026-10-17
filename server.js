@@ -4,12 +4,17 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const app = express();
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
 const TELEGRAM_CHAT_ID_2 = '715805541';
 const CUSTOMERS_FILE = '/data/customers.json';
+
+// Meta Conversions API
+const PIXEL_ID = '1139354490574210';
+const CAPI_ACCESS_TOKEN = process.env.CAPI_ACCESS_TOKEN;
 
 // ─── Customer Storage ─────────────────────────────────────────────────────────
 
@@ -53,6 +58,74 @@ async function sendTelegram(message) {
   }
 }
 
+// ─── Meta Conversions API ─────────────────────────────────────────────────────
+
+function hashData(data) {
+  if (!data) return null;
+  return crypto.createHash('sha256').update(String(data).toLowerCase().trim()).digest('hex');
+}
+
+async function sendCAPIEvent(eventName, eventData) {
+  if (!CAPI_ACCESS_TOKEN) {
+    console.log('⚠️  CAPI_ACCESS_TOKEN not set. Skipping CAPI event:', eventName);
+    return;
+  }
+
+  const userData = {
+    em: eventData.email ? hashData(eventData.email) : undefined,
+    ph: eventData.phone ? hashData(eventData.phone) : undefined,
+    fn: eventData.fname ? hashData(eventData.fname) : undefined,
+    ln: eventData.lname ? hashData(eventData.lname) : undefined,
+    ct: eventData.city ? hashData(eventData.city) : undefined,
+    st: eventData.country ? hashData(eventData.country) : undefined,
+    zp: eventData.zip ? hashData(eventData.zip) : undefined,
+    country: eventData.country || 'CH',
+  };
+
+  // Remove undefined values
+  Object.keys(userData).forEach(k => userData[k] === undefined && delete userData[k]);
+
+  const capiEvent = {
+    event_name: eventName,
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventData.event_id,
+    user_data: userData,
+    custom_data: {
+      currency: 'CHF',
+      value: eventData.value || 19.99,
+      content_name: eventData.content_name || 'AirBack MAX',
+      content_ids: [eventData.content_id || 'airback-max'],
+    },
+  };
+
+  // Add IP and user agent if available
+  if (eventData.ip) capiEvent.user_data.external_id = hashData(eventData.ip);
+  if (eventData.userAgent) capiEvent.user_data.ua = eventData.userAgent;
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${PIXEL_ID}/events?access_token=${CAPI_ACCESS_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: [capiEvent],
+          test_event_code: process.env.CAPI_TEST_EVENT_CODE, // Optional: for testing
+        }),
+      }
+    );
+
+    const result = await response.json();
+    if (result.events_received) {
+      console.log(`✅ CAPI ${eventName} sent (event_id: ${eventData.event_id})`);
+    } else {
+      console.log(`⚠️  CAPI ${eventName} response:`, result);
+    }
+  } catch (err) {
+    console.log(`❌ CAPI ${eventName} error:`, err.message);
+  }
+}
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
@@ -60,8 +133,42 @@ app.use(bodyParser.json());
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
+app.post('/view-content', async (req, res) => {
+  const { visitorId, page } = req.body;
+
+  // Send ViewContent to CAPI (landing page product view)
+  await sendCAPIEvent('ViewContent', {
+    event_id: visitorId + '_view',
+    value: 19.99,
+    content_name: 'AirBack MAX',
+    content_id: 'airback-max',
+  });
+
+  // Send Telegram notification
+  await sendTelegram(
+    `👁 <b>Neuer Landingpage Besucher!</b>\n\n` +
+    `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
+    `📄 Seite: ${page === 'landing' ? 'Landing Page (Produkt)' : page}\n` +
+    `📦 Produkt: AirBack MAX\n` +
+    `💰 Preis: 19.99 CHF\n` +
+    `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
+  );
+
+  console.log(`📄 ViewContent: ${page || 'landing'} (${visitorId})`);
+  res.json({ ok: true });
+});
+
 app.post('/page-visit', async (req, res) => {
   const { visitorId, ip, country, city } = req.body;
+
+  // Send InitiateCheckout to CAPI
+  await sendCAPIEvent('InitiateCheckout', {
+    event_id: visitorId,
+    value: 19.99,
+    content_name: 'AirBack MAX',
+    content_id: 'airback-max',
+  });
+
   await sendTelegram(
     `👁 <b>Neuer Seitenbesucher!</b>\n\n` +
     `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
@@ -71,55 +178,6 @@ app.post('/page-visit', async (req, res) => {
     `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
   res.json({ ok: true });
-});
-
-// ─── CREATE PAYMENT INTENT (for React checkout) ────────────────────────────────
-app.post('/create-payment-intent', async (req, res) => {
-  let { email, name, phone, visitorId, lang } = req.body;
-  email = email.trim().replace(/\.$/, '');
-
-  try {
-    let customer;
-    const existing = await stripe.customers.list({ email, limit: 1 });
-    if (existing.data.length > 0) {
-      customer = existing.data[0];
-    } else {
-      customer = await stripe.customers.create({
-        email,
-        name,
-        phone,
-        address: { country: 'CH' },
-      });
-    }
-
-    // One single payment: CHF 9.99 = 999 cents
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: 999,
-      currency: 'chf',
-      payment_method_types: ['twint'],
-      customer: customer.id,
-      receipt_email: email,
-      description: 'IPTV Subscription - 12 months',
-      metadata: { product: 'iptv-12-months', name, email, phone, lang, visitorId },
-    });
-
-    await sendTelegram(
-      `🛒 <b>Kassaangaben!</b>\n\n` +
-      `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
-      `📧 E-Mail: ${email}\n` +
-      `👤 Name: ${name}\n` +
-      `📞 Telefon: ${phone || 'N/A'}\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💰 Betrag: 9.99 CHF\n` +
-      `💳 Zahlungsart: TWINT\n` +
-      `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
-    );
-
-    res.json({ clientSecret: paymentIntent.client_secret, customerId: customer.id });
-  } catch (error) {
-    console.error('Error creating payment intent:', error);
-    res.status(400).json({ error: error.message });
-  }
 });
 
 app.post('/create-setup-intent', async (req, res) => {
@@ -144,6 +202,21 @@ app.post('/create-setup-intent', async (req, res) => {
       metadata: { customer_id: customer.id },
     });
 
+    // Send AddPaymentInfo event to CAPI
+    await sendCAPIEvent('AddPaymentInfo', {
+      event_id: setupIntent.id,
+      email,
+      fname,
+      lname,
+      city,
+      country: country || 'CH',
+      zip,
+      phone,
+      value: 19.99,
+      content_name: 'AirBack MAX',
+      content_id: 'airback-max',
+    });
+
     await sendTelegram(
       `🛒 <b>Kassaangaben!</b>\n\n` +
       `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
@@ -151,9 +224,9 @@ app.post('/create-setup-intent', async (req, res) => {
       `👤 Name: ${fname} ${lname}\n` +
       `📍 Adresse: ${address}, ${zip} ${city}, ${country}\n` +
       `📞 Telefon: ${phone || 'N/A'}\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💰 Betrag: 9.99 CHF\n` +
-      `💳 Zahlungsart: Card\n` +
+      `📦 Produkt: AirBack MAX\n` +
+      `💰 Betrag: 19.99 CHF\n` +
+      `💳 Zahlungsart: TWINT (Jetzt kaufen, später bezahlen)\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
 
@@ -171,15 +244,19 @@ app.post('/payment-initiated', async (req, res) => {
     `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
     `📧 E-Mail: ${email}\n` +
     `⏳ Kunde hat auf "Jetzt kaufen" geklickt\n` +
-    `💰 Zahlungsart: TWINT\n` +
+    `💰 Zahlungsart: TWINT (Jetzt kaufen, später bezahlen)\n` +
     `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
   );
   res.json({ ok: true });
 });
 
 app.post('/create-subscription', async (req, res) => {
-  const { customerId, paymentMethodId, visitorId } = req.body;
+  const { customerId, paymentMethodId, setupIntentId, visitorId } = req.body;
   try {
+    // Fetch customer from Stripe to get email
+    const customer = await stripe.customers.retrieve(customerId);
+    const email = customer.email || '';
+
     await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
     await stripe.customers.update(customerId, {
       invoice_settings: { default_payment_method: paymentMethodId },
@@ -197,10 +274,11 @@ app.post('/create-subscription', async (req, res) => {
       savedAt: new Date().toISOString(),
     });
 
-    // Charge 1 — 9.99 CHF (999 cents)
+    // Charge 1 — 19.99 CHF (1999 cents)
+    let payment1;
     try {
-      const payment1 = await stripe.paymentIntents.create({
-        amount: 999,
+      payment1 = await stripe.paymentIntents.create({
+        amount: 1999,
         currency: 'chf',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -218,18 +296,28 @@ app.post('/create-subscription', async (req, res) => {
     // Subscription with 30-day trial
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
-      items: [{ price: 'price_1UR8RaP0JcdHsIv5wpPpeC3z' }],
+      items: [{ price: 'price_1UEU48BkfefkBB9Sicrm6Ong' }],
       default_payment_method: paymentMethodId,
       trial_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
     });
     console.log('Subscription created:', subscription.id, subscription.status);
 
+    // ✅ Send Purchase event to CAPI (server-side) using setupIntent ID for dedup
+    await sendCAPIEvent('Purchase', {
+      event_id: setupIntentId, // Same as browser event for deduplication
+      email,
+      value: 19.99,
+      content_name: 'AirBack MAX',
+      content_id: 'airback-max',
+    });
+
     await sendTelegram(
       `✅ <b>Zahlung erfolgreich!</b>\n\n` +
       `🆔 Besucher-ID: <code>${visitorId}</code>\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💳 Zahlungsart: ${pmType}\n` +
-      `💳 Betrag: 9.99 CHF\n` +
+      `📧 E-Mail: ${email}\n` +
+      `📦 Produkt: AirBack MAX\n` +
+      `💳 Zahlungsart: ${pmType} (TWINT - Jetzt kaufen, später bezahlen)\n` +
+      `💳 Betrag: 19.99 CHF\n` +
       `🆔 Bestellnummer: ${subscription.id}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
@@ -259,7 +347,7 @@ app.post('/charge-saved', async (req, res) => {
 
   try {
     const payment = await stripe.paymentIntents.create({
-      amount: amount || 999,
+      amount: amount || 1999,
       currency: currency || 'chf',
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
@@ -273,8 +361,8 @@ app.post('/charge-saved', async (req, res) => {
     await sendTelegram(
       `💰 <b>Manuelle Zahlung!</b>\n\n` +
       `🆔 Kunde: <code>${customerId}</code>\n` +
-      `📦 Produkt: IPTV Subscription - 12 months\n` +
-      `💳 Betrag: ${(amount || 999) / 100} CHF\n` +
+      `📦 Produkt: AirBack MAX\n` +
+      `💳 Betrag: ${(amount || 1999) / 100} CHF\n` +
       `📋 Status: ${payment.status}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
@@ -303,8 +391,8 @@ app.post('/create-mandate', async (req, res) => {
 
     console.log('Mandate created:', mandate.id);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       mandateId: mandate.id,
       message: 'Mandat erfolgreich erstellt. Sie können diesen Kunden jetzt belasten.'
     });
@@ -319,13 +407,14 @@ app.get('/health', (req, res) => {
   const customers = loadCustomers();
   res.json({
     status: 'ok',
-    product: 'IPTV Subscription - 12 months',
-    amount: '9.99 CHF',
+    product: 'AirBack MAX',
+    amount: '19.99 CHF',
     currency: 'chf',
     paymentMethod: 'twint',
     priceId: 'price_1UEU48BkfefkBB9Sicrm6Ong',
     market: 'Switzerland',
     savedCustomers: customers.length,
+    capiEnabled: !!CAPI_ACCESS_TOKEN,
   });
 });
 
@@ -333,4 +422,5 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => {
   console.log('Server running on http://localhost:' + PORT);
+  console.log(`CAPI enabled: ${!!CAPI_ACCESS_TOKEN}`);
 });
