@@ -7,9 +7,11 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const app = express();
-const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
-const TELEGRAM_CHAT_ID = '8522488857';
-const TELEGRAM_CHAT_ID_2 = '715805541';
+
+// Secrets come from environment variables (set these in Render)
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const TELEGRAM_CHAT_ID_2 = process.env.TELEGRAM_CHAT_ID_2;
 const CUSTOMERS_FILE = '/data/customers.json';
 
 // Meta Conversions API
@@ -43,17 +45,19 @@ function saveCustomer(entry) {
 // ─── Telegram ─────────────────────────────────────────────────────────────────
 
 async function sendTelegram(message) {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.log('⚠️  TELEGRAM_BOT_TOKEN not set. Skipping Telegram message.');
+    return;
+  }
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' })
-    });
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID_2, text: message, parse_mode: 'HTML' })
-    });
+    const chatIds = [TELEGRAM_CHAT_ID, TELEGRAM_CHAT_ID_2].filter(Boolean);
+    for (const chatId of chatIds) {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
+      });
+    }
   } catch (err) {
     console.log('Telegram error:', err.message);
   }
@@ -350,12 +354,24 @@ app.get('/customers', (req, res) => {
 
 // ─── Manually charge a saved customer ────────────────────────────────────────
 app.post('/charge-saved', async (req, res) => {
-  const { customerId, amount, currency } = req.body;
+  const { customerId, amount, currency, statement_descriptor } = req.body;
   const customers = loadCustomers();
   const customer = customers.find(c => c.customerId === customerId);
 
   if (!customer) {
     return res.status(404).json({ error: 'Customer not found in saved list' });
+  }
+
+  // Statement descriptor rules: max 22 chars, no < > " ' *
+  if (statement_descriptor !== undefined) {
+    if (
+      typeof statement_descriptor !== 'string' ||
+      statement_descriptor.length === 0 ||
+      statement_descriptor.length > 22 ||
+      /[<>"'*]/.test(statement_descriptor)
+    ) {
+      return res.status(400).json({ error: 'Invalid statement_descriptor' });
+    }
   }
 
   try {
@@ -365,6 +381,7 @@ app.post('/charge-saved', async (req, res) => {
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
+      statement_descriptor: statement_descriptor || 'AIRBACK MAX',
       confirm: true,
       off_session: true,
     });
@@ -375,7 +392,8 @@ app.post('/charge-saved', async (req, res) => {
       `💰 <b>Manuelle Zahlung!</b>\n\n` +
       `🆔 Kunde: <code>${customerId}</code>\n` +
       `📦 Produkt: AirBack MAX\n` +
-      `💳 Betrag: ${(amount || 1999) / 100} CHF\n` +
+      `💳 Betrag: ${(amount || 1999) / 100} ${(currency || 'chf').toUpperCase()}\n` +
+      `🏷 Descriptor: ${statement_descriptor || 'AIRBACK MAX'}\n` +
       `📋 Status: ${payment.status}\n` +
       `🕐 Zeit: ${new Date().toLocaleString('de-DE')}`
     );
