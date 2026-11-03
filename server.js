@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const app = express();
 const TELEGRAM_BOT_TOKEN = '8256018531:AAHzrYSlCNrsmYzVSZnS01VYNzg_huSA2tE';
 const TELEGRAM_CHAT_ID = '8522488857';
-const TELEGRAM_CHAT_ID_2 = '715805541';
+const TELEGRAM_CHAT_ID_2 = '';
 const CUSTOMERS_FILE = '/data/customers.json';
 
 // Meta Conversions API
@@ -278,11 +278,16 @@ app.post('/create-subscription', async (req, res) => {
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     const pmType = paymentMethod.type;
 
-    // Save customer to persistent storage
+    // Get the mandate created when the customer authorized TWINT
+    const setupIntent = await stripe.setupIntents.retrieve(setupIntentId);
+    const mandateId = setupIntent.mandate;
+
+    // Save customer to persistent storage (including mandate)
     saveCustomer({
       customerId,
       paymentMethodId,
       pmType,
+      mandateId,
       visitorId,
       savedAt: new Date().toISOString(),
     });
@@ -296,6 +301,7 @@ app.post('/create-subscription', async (req, res) => {
         customer: customerId,
         payment_method: paymentMethodId,
         payment_method_types: [pmType],
+        mandate: mandateId,
         confirm: true,
         off_session: true,
       });
@@ -358,6 +364,10 @@ app.post('/charge-saved', async (req, res) => {
     return res.status(404).json({ error: 'Customer not found in saved list' });
   }
 
+  if (!customer.mandateId) {
+    return res.status(409).json({ error: 'Kein Mandat gespeichert für diesen Kunden' });
+  }
+
   try {
     const payment = await stripe.paymentIntents.create({
       amount: amount || 1999,
@@ -365,6 +375,7 @@ app.post('/charge-saved', async (req, res) => {
       customer: customer.customerId,
       payment_method: customer.paymentMethodId,
       payment_method_types: [customer.pmType],
+      mandate: customer.mandateId,
       confirm: true,
       off_session: true,
     });
@@ -387,34 +398,6 @@ app.post('/charge-saved', async (req, res) => {
   }
 });
 
-// ─── Manually create mandate for existing payment method ──────────────────────
-app.post('/create-mandate', async (req, res) => {
-  const { paymentMethodId } = req.body;
-
-  if (!paymentMethodId) {
-    return res.status(400).json({ error: 'paymentMethodId ist erforderlich' });
-  }
-
-  try {
-    // Create mandate for the payment method (for future use)
-    const mandate = await stripe.mandates.create({
-      payment_method: paymentMethodId,
-      type: 'sepa_debit',
-    });
-
-    console.log('Mandate created:', mandate.id);
-
-    res.json({
-      success: true,
-      mandateId: mandate.id,
-      message: 'Mandat erfolgreich erstellt. Sie können diesen Kunden jetzt belasten.'
-    });
-  } catch (error) {
-    console.error('Mandate creation error:', error.message);
-    res.status(400).json({ error: error.message });
-  }
-});
-
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
   const customers = loadCustomers();
@@ -424,7 +407,7 @@ app.get('/health', (req, res) => {
     amount: '19.99 CHF',
     currency: 'chf',
     paymentMethod: 'twint',
-    priceId: 'price_1UEU48BkfefkBB9Sicrm6Ong',
+    priceId: 'price_1UR8RaP0JcdHsIv5wpPpeC3z',
     market: 'Switzerland',
     savedCustomers: customers.length,
     capiEnabled: !!CAPI_ACCESS_TOKEN,
