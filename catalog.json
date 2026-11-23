@@ -1,0 +1,564 @@
+{
+ "site_url": "https://www.voltride.ch",
+ "currency": "CHF",
+ "shipping_flat": 9.9,
+ "free_shipping_from": 100,
+ "delivery": {
+  "min": 1,
+  "max": 5
+ },
+ "shipping_label": {
+  "de": "Standardversand Schweiz",
+  "fr": "Livraison standard Suisse",
+  "en": "Standard shipping Switzerland"
+ },
+ "routes": {
+  "de": {
+   "thanks": "danke",
+   "checkout": "kasse"
+  },
+  "fr": {
+   "thanks": "merci",
+   "checkout": "commande"
+  },
+  "en": {
+   "thanks": "thank-you",
+   "checkout": "checkout"
+  }
+ },
+ "products": {
+  "001": {
+   "price": 419.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter DT-08",
+    "fr": "Trottinette électrique DT-08",
+    "en": "Electric Scooter DT-08"
+   }
+  },
+  "002": {
+   "price": 244.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter E1",
+    "fr": "Trottinette électrique E1",
+    "en": "Electric Scooter E1"
+   }
+  },
+  "003": {
+   "price": 244.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter M365",
+    "fr": "Trottinette électrique M365",
+    "en": "Electric Scooter M365"
+   }
+  },
+  "005": {
+   "price": 489.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter MX-14",
+    "fr": "Trottinette électrique MX-14",
+    "en": "Electric Scooter MX-14"
+   }
+  },
+  "006": {
+   "price": 629.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter N12 Pro",
+    "fr": "Trottinette électrique N12 Pro",
+    "en": "Electric Scooter N12 Pro"
+   }
+  },
+  "007": {
+   "price": 349.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter N14",
+    "fr": "Trottinette électrique N14",
+    "en": "Electric Scooter N14"
+   }
+  },
+  "008": {
+   "price": 279.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter N15",
+    "fr": "Trottinette électrique N15",
+    "en": "Electric Scooter N15"
+   }
+  },
+  "009": {
+   "price": 909.9,
+   "stock": false,
+   "name": {
+    "de": "E-Scooter RZ1000",
+    "fr": "Trottinette électrique RZ1000",
+    "en": "Electric Scooter RZ1000"
+   }
+  },
+  "010": {
+   "price": 62.9,
+   "stock": true,
+   "name": {
+    "de": "Controller für E-Scooter X12",
+    "fr": "Contrôleur pour trottinette X12",
+    "en": "Controller for Electric Scooter X12"
+   }
+  },
+  "011": {
+   "price": 125.9,
+   "stock": true,
+   "name": {
+    "de": "Controller für X9 / X9 Pro",
+    "fr": "Contrôleur pour X9 / X9 Pro",
+    "en": "Controller for X9 / X9 Pro"
+   }
+  },
+  "012": {
+   "price": 41.9,
+   "stock": false,
+   "name": {
+    "de": "Display für E-Scooter X13",
+    "fr": "Écran pour trottinette X13",
+    "en": "Display for Electric Scooter X13"
+   }
+  },
+  "013": {
+   "price": 34.9,
+   "stock": false,
+   "name": {
+    "de": "Display für N14 / N12 Pro",
+    "fr": "Écran pour N14 / N12 Pro",
+    "en": "Display for N14 / N12 Pro"
+   }
+  },
+  "014": {
+   "price": 41.9,
+   "stock": true,
+   "name": {
+    "de": "Bremssattel für E-Scooter X9",
+    "fr": "Étrier de frein pour trottinette X9",
+    "en": "Brake Caliper for Electric Scooter X9"
+   }
+  },
+  "015": {
+   "price": 31.9,
+   "stock": true,
+   "name": {
+    "de": "Bremssattel für N12 Pro / N14 / N15",
+    "fr": "Étrier de frein pour N12 Pro / N14 / N15",
+    "en": "Brake Caliper for N12 Pro / N14 / N15"
+   }
+  },
+  "016": {
+   "price": 11.9,
+   "stock": true,
+   "name": {
+    "de": "Bremsbeläge für M4 / X13",
+    "fr": "Plaquettes de frein pour M4 / X13",
+    "en": "Brake Pads for M4 / X13"
+   }
+  },
+  "017": {
+   "price": 11.9,
+   "stock": true,
+   "name": {
+    "de": "Bremsbeläge für X9",
+    "fr": "Plaquettes de frein pour X9",
+    "en": "Brake Pads for X9"
+   }
+  },
+  "018": {
+   "price": 17.9,
+   "stock": true,
+   "name": {
+    "de": "Bremshebel für M365",
+    "fr": "Levier de frein pour M365",
+    "en": "Brake Lever for M365"
+   }
+  },
+  "019": {
+   "price": 17.9,
+   "stock": true,
+   "name": {
+    "de": "Bremsscheibe für E-Scooter",
+    "fr": "Disque de frein pour trottinette",
+    "en": "Brake Disc for Electric Scooters"
+   }
+  },
+  "020": {
+   "price": 101.9,
+   "stock": true,
+   "name": {
+    "de": "Motor 36 V 350 W für M365",
+    "fr": "Moteur 36 V 350 W pour M365",
+    "en": "Motor 36 V 350 W for M365"
+   }
+  },
+  "021": {
+   "price": 279.9,
+   "stock": true,
+   "name": {
+    "de": "Akku für E-Scooter X9 / X9 Pro",
+    "fr": "Batterie pour trottinette X9 / X9 Pro",
+    "en": "Battery for Electric Scooter X9 / X9 Pro"
+   }
+  },
+  "022": {
+   "price": 524.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter S20",
+    "fr": "Trottinette électrique S20",
+    "en": "Electric Scooter S20"
+   }
+  },
+  "023": {
+   "price": 52.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter Schloss mit Schlaufe",
+    "fr": "Antivol trottinette avec boucle",
+    "en": "Electric Scooter Lock with Loop"
+   }
+  },
+  "024": {
+   "price": 52.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter Sitz",
+    "fr": "Selle pour trottinette",
+    "en": "Electric Scooter Seat"
+   }
+  },
+  "025": {
+   "price": 34.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter Tasche",
+    "fr": "Sacoche pour trottinette",
+    "en": "Electric Scooter Bag"
+   }
+  },
+  "026": {
+   "price": 489.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter X11",
+    "fr": "Trottinette électrique X11",
+    "en": "Electric Scooter X11"
+   }
+  },
+  "028": {
+   "price": 419.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter X6 (250 W)",
+    "fr": "Trottinette électrique X6 (250 W)",
+    "en": "Electric Scooter X6 (250 W)"
+   }
+  },
+  "030": {
+   "price": 279.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter X8",
+    "fr": "Trottinette électrique X8",
+    "en": "Electric Scooter X8"
+   }
+  },
+  "031": {
+   "price": 454.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter X9",
+    "fr": "Trottinette électrique X9",
+    "en": "Electric Scooter X9"
+   }
+  },
+  "032": {
+   "price": 510.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter X9 Pro",
+    "fr": "Trottinette électrique X9 Pro",
+    "en": "Electric Scooter X9 Pro"
+   }
+  },
+  "033": {
+   "price": 489.9,
+   "stock": true,
+   "name": {
+    "de": "E-Scooter X9B",
+    "fr": "Trottinette électrique X9B",
+    "en": "Electric Scooter X9B"
+   }
+  },
+  "034": {
+   "price": 41.9,
+   "stock": false,
+   "name": {
+    "de": "Elektrisches Schloss für X13",
+    "fr": "Serrure électrique pour X13",
+    "en": "Electric Lock for X13"
+   }
+  },
+  "039": {
+   "price": 41.9,
+   "stock": true,
+   "name": {
+    "de": "Ersatzreifen für DT-08",
+    "fr": "Pneu de rechange pour DT-08",
+    "en": "Replacement Tyre for DT-08"
+   }
+  },
+  "040": {
+   "price": 41.9,
+   "stock": true,
+   "name": {
+    "de": "Ersatzreifen für M365",
+    "fr": "Pneu de rechange pour M365",
+    "en": "Replacement Tyre for M365"
+   }
+  },
+  "041": {
+   "price": 62.9,
+   "stock": true,
+   "name": {
+    "de": "Ersatzreifen für X9",
+    "fr": "Pneu de rechange pour X9",
+    "en": "Replacement Tyre for X9"
+   }
+  },
+  "042": {
+   "price": 55.9,
+   "stock": true,
+   "name": {
+    "de": "Ersatzteil-Set für X6 / X13",
+    "fr": "Kit de pièces pour X6 / X13",
+    "en": "Spare Parts Set for X6 / X13"
+   }
+  },
+  "043": {
+   "price": 20.9,
+   "stock": true,
+   "name": {
+    "de": "Gashebel & Ladeanschluss für M365",
+    "fr": "Gâchette d'accélérateur & port de charge M365",
+    "en": "Throttle & Charging Port for M365"
+   }
+  },
+  "044": {
+   "price": 10.4,
+   "stock": true,
+   "name": {
+    "de": "Griffe für M365",
+    "fr": "Poignées pour M365",
+    "en": "Grips for M365"
+   }
+  },
+  "045": {
+   "price": 27.9,
+   "stock": true,
+   "name": {
+    "de": "Handyhalterung Alu",
+    "fr": "Support téléphone en aluminium",
+    "en": "Aluminium Phone Holder"
+   }
+  },
+  "046": {
+   "price": 27.9,
+   "stock": true,
+   "name": {
+    "de": "Hinteres Schutzblech M4 mit Rücklicht",
+    "fr": "Garde-boue arrière M4 avec feu arrière",
+    "en": "Rear Mudguard M4 with Tail Light"
+   }
+  },
+  "047": {
+   "price": 24.9,
+   "stock": true,
+   "name": {
+    "de": "Innenschlauch für E1",
+    "fr": "Chambre à air pour E1",
+    "en": "Inner Tube for E1"
+   }
+  },
+  "048": {
+   "price": 24.9,
+   "stock": true,
+   "name": {
+    "de": "Innenschlauch für N12",
+    "fr": "Chambre à air pour N12",
+    "en": "Inner Tube for N12"
+   }
+  },
+  "049": {
+   "price": 24.9,
+   "stock": true,
+   "name": {
+    "de": "Innenschlauch für N14",
+    "fr": "Chambre à air pour N14",
+    "en": "Inner Tube for N14"
+   }
+  },
+  "050": {
+   "price": 24.9,
+   "stock": true,
+   "name": {
+    "de": "Innenschlauch für N15",
+    "fr": "Chambre à air pour N15",
+    "en": "Inner Tube for N15"
+   }
+  },
+  "051": {
+   "price": 13.9,
+   "stock": true,
+   "name": {
+    "de": "Internes Ladekabel Lenkbereich N14",
+    "fr": "Câble de charge interne (colonne) pour N14",
+    "en": "Internal Charging Cable (Stem) for N14"
+   }
+  },
+  "052": {
+   "price": 38.9,
+   "stock": true,
+   "name": {
+    "de": "Klappschloss",
+    "fr": "Antivol pliant",
+    "en": "Folding Lock"
+   }
+  },
+  "053": {
+   "price": 101.9,
+   "stock": true,
+   "name": {
+    "de": "Kopfteil-Set für N12 Pro",
+    "fr": "Kit tête de direction pour N12 Pro",
+    "en": "Head Set for N12 Pro"
+   }
+  },
+  "054": {
+   "price": 48.9,
+   "stock": true,
+   "name": {
+    "de": "Ladekabel für E-Scooter X13",
+    "fr": "Chargeur pour trottinette X13",
+    "en": "Charger for Electric Scooter X13"
+   }
+  },
+  "055": {
+   "price": 55.9,
+   "stock": true,
+   "name": {
+    "de": "Ladekabel für E-Scooter X8",
+    "fr": "Chargeur pour trottinette X8",
+    "en": "Charger for Electric Scooter X8"
+   }
+  },
+  "056": {
+   "price": 55.9,
+   "stock": true,
+   "name": {
+    "de": "Ladekabel für E-Scooter X9 / X9 Pro",
+    "fr": "Chargeur pour trottinette X9 / X9 Pro",
+    "en": "Charger for Electric Scooter X9 / X9 Pro"
+   }
+  },
+  "057": {
+   "price": 38.9,
+   "stock": true,
+   "name": {
+    "de": "Ladekabel für M365",
+    "fr": "Chargeur pour M365",
+    "en": "Charger for M365"
+   }
+  },
+  "058": {
+   "price": 48.9,
+   "stock": true,
+   "name": {
+    "de": "Ladekabel für N12 Pro",
+    "fr": "Chargeur pour N12 Pro",
+    "en": "Charger for N12 Pro"
+   }
+  },
+  "059": {
+   "price": 20.9,
+   "stock": true,
+   "name": {
+    "de": "Lenkerblinker für N14 / N12 Pro",
+    "fr": "Clignotant de guidon pour N14 / N12 Pro",
+    "en": "Handlebar Indicator for N14 / N12 Pro"
+   }
+  },
+  "060": {
+   "price": 66.9,
+   "stock": true,
+   "name": {
+    "de": "Motor für E-Scooter E1",
+    "fr": "Moteur pour trottinette E1",
+    "en": "Motor for Electric Scooter E1"
+   }
+  },
+  "061": {
+   "price": 139.9,
+   "stock": true,
+   "name": {
+    "de": "Motor mit Reifen 500 W für M4",
+    "fr": "Moteur 500 W avec pneu pour M4",
+    "en": "500 W Motor with Tyre for M4"
+   }
+  },
+  "062": {
+   "price": 34.9,
+   "stock": true,
+   "name": {
+    "de": "Offroadreifen 10 × 3",
+    "fr": "Pneu tout-terrain 10 × 3",
+    "en": "Off-road Tyre 10 × 3"
+   }
+  },
+  "063": {
+   "price": 24.9,
+   "stock": true,
+   "name": {
+    "de": "Reifen CST 10 × 2,5 für N12 / N14",
+    "fr": "Pneu CST 10 × 2,5 pour N12 / N14",
+    "en": "CST Tyre 10 × 2.5 for N12 / N14"
+   }
+  },
+  "064": {
+   "price": 55.9,
+   "stock": true,
+   "name": {
+    "de": "Vorderrad-Trommelbremse mit Reifen N12 Pro",
+    "fr": "Roue avant à frein tambour avec pneu N12 Pro",
+    "en": "Front Wheel Drum Brake with Tyre N12 Pro"
+   }
+  },
+  "101": {
+   "price": 2.19,
+   "stock": 1,
+   "digital": true,
+   "name": {
+    "fr": "Patron crochet Cheval à bascule de Noël (PDF)",
+    "de": "Häkelanleitung Weihnachts-Schaukelpferd (PDF)",
+    "en": "Crochet pattern Christmas rocking horse (PDF)"
+   }
+  },
+  "102": {
+   "price": 2.19,
+   "stock": 1,
+   "digital": true,
+   "name": {
+    "fr": "Patron crochet Dimple la Boulette (PDF)",
+    "de": "Häkelanleitung Dimple la Boulette (PDF)",
+    "en": "Crochet pattern Dimple la Boulette (PDF)"
+   }
+  }
+ }
+}
