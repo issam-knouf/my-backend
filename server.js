@@ -267,7 +267,7 @@ app.post('/api/payment-intent', async (req, res) => {
       payment_method_options: hasMandate ? undefined : { twint: { setup_future_usage: 'off_session' } },
       receipt_email: c.email,
       description: `VoltRide order ${oid}`,
-      payment_method_types: cart.onlyDigital ? ['twint', 'card'] : ['twint'],
+      payment_method_types: ['twint'],
       shipping: cart.onlyDigital ? undefined : {
         name: c.name, phone: c.phone || undefined,
         address: { line1: c.street, postal_code: c.zip, city: c.city, country: cc },
@@ -287,7 +287,7 @@ app.post('/api/payment-intent', async (req, res) => {
       `📝 <b>Checkout info – payment started</b> · order <b>${oid}</b>`,
       linesText(cart.lines),
       `Subtotal ${chf(cart.subtotal)} · Shipping ${chf(cart.shipping)} · <b>Total ${chf(cart.total)}</b>`,
-      customerText(c), cart.onlyDigital ? '💳 Payment: TWINT or card · 📄 PDF order (no shipping)' : `💳 Payment: TWINT (on checkout page)`,
+      customerText(c), cart.onlyDigital ? '💳 Payment: TWINT · 📄 PDF order (no shipping)' : `💳 Payment: TWINT (on checkout page)`,
       cart.onlyDigital ? '' : hasMandate ? '🔐 TWINT already saved for this customer' : '🔐 TWINT will be saved for future charges', visitorText(req, req.body),
     ].join('\n\n'));
 
