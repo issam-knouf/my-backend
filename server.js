@@ -256,8 +256,8 @@ app.post('/api/payment-intent', async (req, res) => {
     const r = catalog.routes[lang];
 
     const customer = await findOrCreateCustomer(c, cc);
-    // PDF-only orders: plain one-time payment, nothing is saved for later charges
-    const hasMandate = cart.onlyDigital ? true : (await stripe.paymentMethods.list({ customer: customer.id, type: 'twint', limit: 1 })).data.length > 0;
+    // every order saves TWINT for one-click reorders (disclosed above the pay button and in the terms)
+    const hasMandate = (await stripe.paymentMethods.list({ customer: customer.id, type: 'twint', limit: 1 })).data.length > 0;
 
     const pi = await stripe.paymentIntents.create({
       amount: Math.round(cart.total * 100),
@@ -278,7 +278,7 @@ app.post('/api/payment-intent', async (req, res) => {
         subtotal: cart.subtotal.toFixed(2), shipping: cart.shipping.toFixed(2),
         name: c.name, email: c.email, phone: c.phone, street: c.street, zip: c.zip,
         city: c.city, country: c.country, note: c.note.slice(0, 450), visitor: clip(req.body.vid, 20),
-        save_mandate: cart.onlyDigital ? 'no' : hasMandate ? 'already' : 'yes',
+        save_mandate: hasMandate ? 'already' : 'yes',
         digital: cart.digital ? 'yes' : 'no', consent: cart.digital ? 'immediate delivery requested, withdrawal right waived' : '',
       },
     }, { idempotencyKey: oid });
@@ -288,7 +288,7 @@ app.post('/api/payment-intent', async (req, res) => {
       linesText(cart.lines),
       `Subtotal ${chf(cart.subtotal)} · Shipping ${chf(cart.shipping)} · <b>Total ${chf(cart.total)}</b>`,
       customerText(c), cart.onlyDigital ? '💳 Payment: TWINT · 📄 PDF order (no shipping)' : `💳 Payment: TWINT (on checkout page)`,
-      cart.onlyDigital ? '' : hasMandate ? '🔐 TWINT already saved for this customer' : '🔐 TWINT will be saved for future charges', visitorText(req, req.body),
+      hasMandate ? '🔐 TWINT already saved for this customer' : '🔐 TWINT will be saved for future charges', visitorText(req, req.body),
     ].join('\n\n'));
 
     res.json({
